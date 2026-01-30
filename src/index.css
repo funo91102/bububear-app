@@ -1,0 +1,50 @@
+/* 1. 引入日系圓體字型 (Zen Maru Gothic)，讓風格更親切可愛 */
+@import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body {
+    /* 套用圓體，若載入失敗則退回系統預設字體 */
+    font-family: 'Zen Maru Gothic', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    
+    /* 確保背景色與 App 設計一致 (bg-slate-50) */
+    @apply bg-slate-50 text-slate-700 antialiased;
+    
+    /* === 手機版體驗優化關鍵 === */
+    /* 1. 防止手機上下滑動時出現瀏覽器的「彈性效果」(Rubber banding)，讓體驗更像原生 App */
+    overscroll-behavior-y: none;
+    
+    /* 2. 移除手機點擊按鈕時預設的灰色高亮背景 */
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* === 自定義可愛捲軸 (針對電腦版或支援的瀏覽器) === */
+/* 這是為了讓 AssessmentScreen 中題目列表捲動時更美觀 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent; 
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-200 rounded-full; /* 使用 Tailwind 的顏色變數 */
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-slate-300;
+}
+
+/* === 文字選取顏色 === */
+/* 讓反白文字時顯示可愛的主題色 */
+::selection {
+  @apply bg-sky-200 text-sky-800;
+}

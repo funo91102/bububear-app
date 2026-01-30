@@ -1,0 +1,230 @@
+import React, { useState } from 'react'; // ✅ 移除 useEffect
+import { AssessmentProvider, useAssessment } from './context/AssessmentContext';
+import AssessmentScreen from './components/AssessmentScreen';
+import ResultsScreen from './components/ResultsScreen';
+import ToolPreparationScreen from './components/ToolPreparationScreen';
+import FeedbackScreen from './components/FeedbackScreen'; 
+import { calculateAge } from './utils/ageCalculator';
+// ✅ 移除 validateScreeningDataIntegrity (已移至 main.tsx)
+import { PlayIcon, ChevronLeftIcon } from './components/Icons';
+import './index.css';
+
+// --- 內部元件 1: 確認資訊頁面 ---
+const ConfirmationScreen = () => {
+  const { childProfile, setScreen } = useAssessment();
+  
+  if (!childProfile) {
+    setScreen('welcome');
+    return null;
+  }
+
+  // 解構取得 ageGroupKey，用於更安全的邏輯判斷
+  const { exactAge, ageGroupDisplay, ageGroupKey } = calculateAge(
+    childProfile.birthDate, 
+    new Date(), 
+    childProfile.gestationalAge
+  );
+
+  return (
+    <div className="min-h-screen bg-sky-50 flex flex-col items-center justify-center p-6 relative overflow-hidden">
+       {/* 背景裝飾 */}
+       <div className="absolute top-10 left-10 w-32 h-32 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
+       <div className="absolute -bottom-8 right-10 w-32 h-32 bg-indigo-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
+
+       <div className="bg-white/90 backdrop-blur-sm p-8 rounded-3xl shadow-xl w-full max-w-sm border border-white/50 relative z-10 animate-in fade-in zoom-in duration-300">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-black text-slate-800">確認測驗資訊</h2>
+            <p className="text-slate-500 text-sm mt-1">請確認以下資訊是否正確</p>
+          </div>
+          
+          <div className="space-y-4">
+            {/* 寶貝資訊 */}
+            <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 flex items-center justify-between">
+               <div>
+                 <p className="text-xs text-slate-400 font-bold mb-1">寶貝暱稱</p>
+                 <p className="text-lg font-bold text-slate-700">{childProfile.nickname}</p>
+               </div>
+               <div className="text-right">
+                 <p className="text-xs text-slate-400 font-bold mb-1">
+                   {childProfile.gestationalAge < 37 ? '矯正年齡' : '目前年齡'}
+                 </p>
+                 <p className="text-lg font-bold text-emerald-600">{exactAge}</p>
+               </div>
+            </div>
+
+            {/* 量表資訊 */}
+            <div className="bg-amber-50 p-5 rounded-2xl border border-amber-100 text-center">
+               <p className="text-xs text-amber-600/60 font-bold mb-2">即將使用的篩檢量表</p>
+               <p className="text-2xl font-black text-amber-500">{ageGroupDisplay}</p>
+               <p className="text-xs text-amber-600/40 mt-2">
+                 {/* 改用 key 判斷是否存在有效量表，避免字串比對錯誤 */}
+                 {!ageGroupKey 
+                    ? '目前沒有適合的量表，建議諮詢醫師' 
+                    : '系統將自動載入此階段的圖卡與題目'
+                 }
+               </p>
+            </div>
+          </div>
+
+          <div className="mt-8 flex gap-3">
+            <button 
+              onClick={() => setScreen('welcome')}
+              className="flex-1 py-4 rounded-xl font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 transition-colors flex items-center justify-center gap-1"
+            >
+              <ChevronLeftIcon className="w-4 h-4" />
+              返回
+            </button>
+            <button 
+              onClick={() => setScreen('tool_prep')} 
+              // 改用 key 判斷是否鎖住按鈕 (比字串比對安全)
+              disabled={!ageGroupKey}
+              className="flex-[2] py-4 rounded-xl font-bold text-white bg-emerald-500 hover:bg-emerald-600 disabled:bg-slate-300 disabled:cursor-not-allowed shadow-lg hover:shadow-emerald-200 transition-all flex items-center justify-center gap-2 active:scale-95"
+            >
+              <PlayIcon className="w-5 h-5 fill-current" />
+              下一步
+            </button>
+          </div>
+       </div>
+    </div>
+  );
+};
+
+// --- 內部元件 2: 歡迎畫面 ---
+const WelcomeScreen = () => {
+  const { setScreen, setChildProfile } = useAssessment();
+  const [nickname, setNickname] = useState('');
+  const [birthDate, setBirthDate] = useState('');
+  
+  const [isPremature, setIsPremature] = useState(false);
+  const [gestationalWeeks, setGestationalWeeks] = useState('');
+
+  const handleStart = () => {
+    if (!birthDate) {
+      alert('請輸入孩子的生日，才能計算準確的年齡喔！');
+      return;
+    }
+    if (!nickname) {
+       alert('請幫寶寶取個暱稱吧！');
+       return;
+    }
+
+    let finalGestationalAge = 40; 
+    if (isPremature) {
+      const weeks = parseInt(gestationalWeeks);
+      if (!weeks || weeks < 20 || weeks > 36) {
+        alert('請輸入有效的妊娠週數 (通常為 20 ~ 36 週)');
+        return;
+      }
+      finalGestationalAge = weeks;
+    }
+    
+    setChildProfile({
+      nickname: nickname,
+      birthDate: birthDate,
+      gestationalAge: finalGestationalAge 
+    });
+    
+    setScreen('confirmation'); 
+  };
+
+  return (
+    <div className="min-h-screen bg-sky-50 flex flex-col items-center justify-center p-6 relative overflow-hidden">
+      {/* 背景裝飾 */}
+      <div className="absolute top-10 left-10 w-32 h-32 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
+      <div className="absolute top-10 right-10 w-32 h-32 bg-cyan-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
+      <div className="absolute -bottom-8 left-20 w-32 h-32 bg-indigo-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
+
+      <div className="bg-white/90 backdrop-blur-sm p-8 rounded-3xl shadow-xl w-full max-w-sm border border-white/50 relative z-10">
+        <div className="text-center mb-6">
+          <div className="w-20 h-20 bg-gradient-to-tr from-slate-600 to-slate-800 rounded-full mx-auto flex items-center justify-center shadow-lg mb-4 border-4 border-white">
+            <span className="text-4xl">🐻</span>
+          </div>
+          <h1 className="text-2xl font-black text-slate-800 tracking-tight text-center">
+            歡迎使用步步熊<br/>兒童發展篩檢
+          </h1>
+          <p className="text-slate-500 mt-2 text-sm">讓我們開始關心寶貝的成長，<br/>請先提供一些基本資料。</p>
+        </div>
+
+        <div className="space-y-5">
+          <div>
+            <label className="block text-sm font-bold text-slate-600 mb-1 ml-1">寶貝的暱稱</label>
+            <input 
+              type="text" value={nickname} onChange={(e) => setNickname(e.target.value)}
+              placeholder="例如：小胖"
+              className="w-full px-4 py-3 rounded-xl bg-slate-100 border-2 border-slate-200 focus:border-emerald-400 focus:bg-white transition-all outline-none font-bold text-slate-700 placeholder:font-normal placeholder:text-slate-400"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-bold text-slate-600 mb-1 ml-1">出生日期</label>
+            <input 
+              type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl bg-slate-100 border-2 border-slate-200 focus:border-emerald-400 focus:bg-white transition-all outline-none font-bold text-slate-700"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-bold text-slate-600 mb-2 ml-1">寶寶是早產兒嗎？</label>
+            <div className="flex gap-4">
+              <label className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition-all ${isPremature ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-200 text-slate-500 hover:bg-slate-50'}`}>
+                <input type="radio" name="premature" checked={isPremature} onChange={() => setIsPremature(true)} className="w-4 h-4 accent-emerald-500" /><span className="font-bold">是</span>
+              </label>
+              <label className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition-all ${!isPremature ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-200 text-slate-500 hover:bg-slate-50'}`}>
+                <input type="radio" name="premature" checked={!isPremature} onChange={() => setIsPremature(false)} className="w-4 h-4 accent-emerald-500" /><span className="font-bold">否</span>
+              </label>
+            </div>
+            <p className="text-xs text-slate-400 mt-1 ml-1">早產兒指妊娠週數小於37週的寶寶。</p>
+          </div>
+
+          {isPremature && (
+            <div className="animate-in slide-in-from-top-2 duration-300">
+              <label className="block text-sm font-bold text-slate-600 mb-1 ml-1">出生時的妊娠週數</label>
+              <input 
+                type="number" value={gestationalWeeks} onChange={(e) => setGestationalWeeks(e.target.value)}
+                placeholder="例如：32" min="20" max="36"
+                className="w-full px-4 py-3 rounded-xl bg-slate-100 border-2 border-slate-200 focus:border-emerald-400 focus:bg-white transition-all outline-none font-bold text-slate-700 placeholder:font-normal"
+              />
+            </div>
+          )}
+
+          <button 
+            onClick={handleStart}
+            className="w-full mt-2 bg-emerald-500 hover:bg-emerald-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all flex items-center justify-center gap-2 active:scale-95"
+          >
+            <PlayIcon className="w-5 h-5 fill-current" />
+            下一步
+          </button>
+        </div>
+      </div>
+      
+      <div className="mt-8 text-center space-y-1">
+        <p className="text-xs text-slate-400 font-medium opacity-60">本工具依據衛福部兒童發展連續篩檢量表設計</p>
+        <p className="text-xs text-rose-400 font-bold opacity-80">測試結果僅供參考，請與您的兒科醫師進行正式評估！</p>
+      </div>
+    </div>
+  );
+};
+
+// --- 主畫面路由切換 ---
+const Main = () => {
+  const { screen } = useAssessment();
+
+  switch (screen) {
+    case 'welcome': return <WelcomeScreen />;
+    case 'confirmation': return <ConfirmationScreen />;
+    case 'tool_prep': return <ToolPreparationScreen />;
+    case 'assessment': return <AssessmentScreen />;
+    case 'feedback': return <FeedbackScreen />; 
+    case 'results': return <ResultsScreen />;
+    default: return <WelcomeScreen />;
+  }
+};
+
+export default function App() {
+  // ✅ App.tsx 現在完全專注於路由與 UI，不負責資料校驗
+  return (
+    <AssessmentProvider>
+      <Main />
+    </AssessmentProvider>
+  );
+}
