@@ -27,7 +27,7 @@ const ResultsScreen: React.FC = () => {
         <p className="text-slate-500 mb-4">資料讀取中...</p>
         <button 
           onClick={() => setScreen('welcome')}
-          className="px-6 py-2 bg-sky-500 text-white rounded-lg"
+          className="px-6 py-2 bg-sky-500 text-white rounded-lg hover:bg-sky-600 transition-colors"
         >
           返回首頁
         </button>
@@ -37,7 +37,7 @@ const ResultsScreen: React.FC = () => {
 
   const { overallStatus, domainStatuses, domainScores } = assessmentResult;
 
-  // 1. 取得該年齡層的滿分數據 (為了顯示 3/5 這種分數)
+  // 1. 取得該年齡層的滿分數據 (為了顯示 分數/滿分)
   const ageData = useMemo(() => {
     const { ageGroupKey, exactAge } = calculateAge(
       childProfile.birthDate, 
@@ -200,7 +200,13 @@ const ResultsScreen: React.FC = () => {
             {(Object.keys(DOMAIN_NAMES) as DomainKey[]).map((key, index) => {
               const status = domainStatuses[key];
               const isPass = status === 'pass' || status === 'max';
+              const score = domainScores[key];
               
+              // 取得該面向的詳細資料 (Cutoff & MaxScore)
+              const domainData = ageData.data?.[key];
+              const cutoff = domainData?.cutoff || 0;
+              const maxScore = domainData?.maxScore || 0;
+
               // ✨ 檢查該領域是否有「醫師評估」的項目
               const ageGroupKey = ageData.key;
               const questions = ageGroupKey ? screeningData[ageGroupKey]?.[key]?.questions || [] : [];
@@ -218,48 +224,62 @@ const ResultsScreen: React.FC = () => {
               return (
                 <div 
                   key={key} 
-                  className={`flex items-center justify-between p-4 rounded-2xl border transition-all hover:scale-[1.01] ${cardStyle}`}
+                  className={`flex flex-col p-4 rounded-2xl border transition-all hover:scale-[1.01] ${cardStyle}`}
                   style={{ animationDelay: `${index * 100}ms` }}
                 >
-                  <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg ${
-                      hasDoctorAssessment ? 'bg-indigo-100 text-indigo-600' :
-                      isPass ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'
-                    }`}>
-                      {key === 'gross_motor' && '🏃'}
-                      {key === 'fine_motor' && '🙌'}
-                      {key === 'cognitive_language' && '🗣️'}
-                      {key === 'social' && '😊'}
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg ${
+                        hasDoctorAssessment ? 'bg-indigo-100 text-indigo-600' :
+                        isPass ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'
+                      }`}>
+                        {key === 'gross_motor' && '🏃'}
+                        {key === 'fine_motor' && '🙌'}
+                        {key === 'cognitive_language' && '🗣️'}
+                        {key === 'social' && '😊'}
+                      </div>
+                      <div>
+                        <span className={`font-bold block ${
+                          hasDoctorAssessment ? 'text-indigo-700' :
+                          isPass ? 'text-slate-700' : 'text-rose-700'
+                        }`}>
+                          {DOMAIN_NAMES[key]}
+                        </span>
+                        {/* 顯示及格標準 */}
+                        <span className="text-[10px] text-slate-400 font-medium">
+                          及格標準: {cutoff} 分
+                        </span>
+                      </div>
                     </div>
-                    <span className={`font-bold ${
-                      hasDoctorAssessment ? 'text-indigo-700' :
-                      isPass ? 'text-slate-700' : 'text-rose-700'
-                    }`}>
-                      {DOMAIN_NAMES[key]}
-                    </span>
-                  </div>
-                  
-                  {/* 右側標籤 */}
-                  <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-black ${
-                    hasDoctorAssessment ? 'bg-indigo-100 text-indigo-700' :
-                    isPass ? 'bg-emerald-100 text-emerald-700' : 'bg-white border border-rose-200 text-rose-600'
-                  }`}>
-                    {hasDoctorAssessment ? (
-                      <>
-                        <StethoscopeIcon className="w-3.5 h-3.5 stroke-[2.5]" />
-                        <span>待醫師評估</span>
-                      </>
-                    ) : isPass ? (
-                      <>
-                        <CheckIcon className="w-3.5 h-3.5 stroke-[3]" />
-                        <span>達標</span>
-                      </>
-                    ) : (
-                      <>
-                        <AlertCircleIcon className="w-3.5 h-3.5 stroke-[3]" />
-                        <span>需留意</span>
-                      </>
-                    )}
+                    
+                    {/* 右側分數與狀態 */}
+                    <div className="text-right">
+                       <div className={`text-sm font-black ${isPass ? 'text-slate-700' : 'text-rose-600'}`}>
+                         {score} <span className="text-slate-400 text-xs font-normal">/ {maxScore}</span>
+                       </div>
+                       
+                       <div className={`flex items-center justify-end gap-1 mt-0.5 text-xs font-bold ${
+                         hasDoctorAssessment ? 'text-indigo-600' :
+                         isPass ? 'text-emerald-600' : 'text-rose-500'
+                       }`}>
+                          {hasDoctorAssessment ? (
+                             <>
+                               <StethoscopeIcon className="w-3 h-3" />
+                               <span>待評估</span>
+                             </>
+                          ) : isPass ? (
+                             <>
+                               <CheckIcon className="w-3 h-3" />
+                               <span>達標</span>
+                             </>
+                          ) : (
+                             <>
+                               <AlertCircleIcon className="w-3 h-3" />
+                               <span>需留意</span>
+                             </>
+                          )}
+                       </div>
+                    </div>
                   </div>
                 </div>
               );
@@ -273,7 +293,7 @@ const ResultsScreen: React.FC = () => {
           <button
             onClick={handleExportImage}
             disabled={isExporting}
-            className="w-full py-4 bg-slate-800 text-white rounded-2xl font-bold shadow-lg shadow-slate-200 flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+            className="w-full py-4 bg-slate-800 hover:bg-slate-700 text-white rounded-2xl font-bold shadow-lg shadow-slate-200 flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
           >
             {isExporting ? (
                <span className="animate-pulse">製作報告中...</span>
@@ -315,9 +335,12 @@ const ResultsScreen: React.FC = () => {
              <p className="text-sm text-slate-500">檢測日期：{new Date().toLocaleDateString()}</p>
           </div>
           <div className="text-right">
-             <div className="text-xl font-bold">{childProfile.nickname}</div>
+             <div className="text-xl font-bold text-slate-900">{childProfile.nickname}</div>
              <div className="text-sm text-slate-600">
                {childProfile.gestationalAge < 37 ? '矯正年齡' : '實歲'}: {ageData.displayAge}
+             </div>
+             <div className="text-xs text-slate-400 mt-1">
+               適用量表: {ageData.data?.name || ageData.key}
              </div>
           </div>
         </div>
@@ -325,43 +348,43 @@ const ResultsScreen: React.FC = () => {
         {/* 摘要數據表格 */}
         <div className="mb-6">
           <h2 className="text-lg font-bold mb-3 border-l-4 border-slate-800 pl-3">各面向評估數據</h2>
-          <table className="w-full border-collapse">
+          <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="bg-slate-100">
-                <th className="p-3 text-left border border-slate-300">發展面向</th>
-                <th className="p-3 text-center border border-slate-300">得分 / 滿分</th>
-                <th className="p-3 text-center border border-slate-300">狀態</th>
+                <th className="p-3 text-left border border-slate-300 w-1/3">發展面向</th>
+                <th className="p-3 text-center border border-slate-300 w-1/4">得分 / 滿分</th>
+                <th className="p-3 text-center border border-slate-300 w-1/4">及格標準</th>
+                <th className="p-3 text-center border border-slate-300 w-1/6">狀態</th>
               </tr>
             </thead>
             <tbody>
               {(Object.keys(DOMAIN_NAMES) as DomainKey[]).map((key) => {
                 const score = domainScores[key];
-                const maxScore = ageData.data ? ageData.data[key].maxScore : '-';
+                const domainData = ageData.data?.[key];
+                const maxScore = domainData?.maxScore || '-';
+                const cutoff = domainData?.cutoff || '-';
                 const status = domainStatuses[key];
                 const isPass = status === 'pass' || status === 'max';
                 
-                // ✨ 在報告中也要檢查「醫師評估」
+                // ✨ 檢查「醫師評估」
                 const ageGroupKey = ageData.key;
                 const questions = ageGroupKey ? screeningData[ageGroupKey]?.[key]?.questions || [] : [];
                 const hasDoctorAssessment = questions.some(q => answers[q.id] === 'doctor_assessment');
 
                 return (
                   <tr key={key}>
-                    <td className="p-3 border border-slate-300 font-bold">{DOMAIN_NAMES[key]}</td>
-                    <td className="p-3 border border-slate-300 text-center font-mono text-lg">
-                      {score} <span className="text-slate-400 text-sm">/ {maxScore}</span>
+                    <td className="p-3 border border-slate-300 font-bold text-slate-700">{DOMAIN_NAMES[key]}</td>
+                    <td className="p-3 border border-slate-300 text-center font-mono font-bold text-slate-800">
+                      {score} <span className="text-slate-400 text-xs">/ {maxScore}</span>
+                    </td>
+                    <td className="p-3 border border-slate-300 text-center text-slate-500 font-medium">
+                      ≥ {cutoff}
                     </td>
                     <td className={`p-3 border border-slate-300 text-center font-bold ${
-                      hasDoctorAssessment ? 'text-indigo-600' :
-                      isPass ? 'text-emerald-600' : 'text-rose-600'
+                      hasDoctorAssessment ? 'text-indigo-600 bg-indigo-50' :
+                      isPass ? 'text-emerald-600 bg-emerald-50' : 'text-rose-600 bg-rose-50'
                     }`}>
-                      {hasDoctorAssessment ? (
-                        <span className="flex items-center justify-center gap-1">
-                           <StethoscopeIcon className="w-4 h-4" /> 醫師評估
-                        </span>
-                      ) : (
-                        isPass ? '通過' : '需追蹤'
-                      )}
+                      {hasDoctorAssessment ? '醫師評估' : isPass ? '通過' : '需追蹤'}
                     </td>
                   </tr>
                 );
@@ -372,23 +395,24 @@ const ResultsScreen: React.FC = () => {
 
         {/* 家長回饋與焦慮指數 */}
         {feedback && (
-          <div className="bg-slate-50 border border-slate-200 p-5 rounded-xl">
-             <h2 className="text-lg font-bold mb-3 border-l-4 border-slate-400 pl-3 flex justify-between">
-               家長主觀回饋
-               <span className="text-sm font-normal bg-white px-2 py-1 rounded border">
-                 焦慮指數: <b className="text-rose-600">{feedback.anxietyScore}</b> / 10
-               </span>
-             </h2>
-             <div className="text-slate-700 leading-relaxed bg-white p-4 border border-slate-200 rounded min-h-[80px]">
-               <span className="text-xs text-slate-400 block mb-1">備註紀錄：</span>
+          <div className="bg-slate-50 border border-slate-200 p-5 rounded-xl mb-6">
+             <div className="flex justify-between items-center mb-3">
+               <h2 className="text-lg font-bold border-l-4 border-slate-400 pl-3">家長主觀回饋</h2>
+               <div className="text-sm font-medium bg-white px-3 py-1 rounded-full border border-slate-200 shadow-sm">
+                 焦慮指數: <b className={`ml-1 ${feedback.anxietyScore >= 7 ? 'text-rose-600' : 'text-slate-600'}`}>{feedback.anxietyScore}</b> <span className="text-slate-400 text-xs">/ 10</span>
+               </div>
+             </div>
+             <div className="text-slate-700 text-sm leading-relaxed bg-white p-4 border border-slate-200 rounded-lg min-h-[60px]">
+               <span className="text-xs text-slate-400 block mb-1 font-bold">備註紀錄：</span>
                {feedback.notes || "無填寫備註"}
              </div>
           </div>
         )}
 
         {/* 頁腳 */}
-        <div className="mt-8 pt-4 border-t border-slate-200 text-xs text-slate-400 text-center">
-          此報告由「步步熊 App」生成，僅供醫療諮詢參考，非正式診斷證明。
+        <div className="mt-8 pt-4 border-t border-slate-200 text-xs text-slate-400 text-center flex justify-between items-center">
+          <span>Powered by 步步熊 (BoBoBear)</span>
+          <span>僅供醫療諮詢參考，非正式診斷證明</span>
         </div>
       </div>
     </div>

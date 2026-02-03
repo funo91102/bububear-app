@@ -115,7 +115,7 @@ export const screeningData: ScreeningData = {
   },
 
   // ==========================================
-  // 3. 12-15 個月 (✨ New: 本次新增)
+  // 3. 12-15 個月 (已驗證 ✅)
   // ==========================================
   '12-15m': {
     gross_motor: {
@@ -145,7 +145,7 @@ export const screeningData: ScreeningData = {
       ],
     },
     social: {
-      name: '社會發展', key: 'social', cutoff: 3, maxScore: 5, // PDF P17: 社會切截點3, Max score計算: Q1(2)+Q2(1)+Q3(1)+Q4(1) = 5
+      name: '社會發展', key: 'social', cutoff: 3, maxScore: 5, 
       questions: [
         { id: 'S-12-15m-Q1', type: '實/問', text: '★ 呼喊孩子名字或小名有反應？', weight: 2, emoji: '🙋', kind: 'emoji', description: '有視線或聲音反應。' },
         { id: 'S-12-15m-Q2', type: '實/問', text: '可以和大人玩肢體互動遊戲？', weight: 1, emoji: '🙌', kind: 'emoji', description: '例如交替擊掌 (high five) 或炒蘿蔔等遊戲。' },
@@ -156,9 +156,53 @@ export const screeningData: ScreeningData = {
   },
 
   // ==========================================
-  // 4. 15-18 個月
+  // 4. 15-18 個月 (✨ New: 本次新增)
   // ==========================================
-  '15-18m': createEmptyAgeGroupData(),
+  '15-18m': {
+    gross_motor: {
+      name: '粗大動作', key: 'gross_motor', cutoff: 3, maxScore: 4,
+      questions: [
+        { id: 'GM-15-18m-Q1', type: '實', text: '能放手走至少 2-3 步？', weight: 1, emoji: '🚶', kind: 'emoji', description: '大人不需給予力量協助。' },
+        { id: 'GM-15-18m-Q2', type: '實/問', text: '★ 能放手站至少 30 秒？', weight: 2, emoji: '🧍', kind: 'emoji', description: '在不扶東西的情況下，能維持站立姿勢至少 30 秒。' },
+        { 
+          id: 'GM-15-18m-Q3', type: '實', text: '放手走或扶走時步態是否正常？', weight: 1, emoji: '👣', kind: 'emoji', 
+          description: '觀察重點：沒有持續踮腳尖 (tip-toe)、沒有剪刀式步態 (雙腳交叉)、左右步態對稱。',
+          allowDoctorAssessment: true 
+        },
+      ],
+    },
+    fine_motor: {
+      name: '精細動作', key: 'fine_motor', cutoff: 3, maxScore: 4,
+      questions: [
+        { id: 'FM-15-18m-Q1', type: '實', text: '★ 能以「拇指與食指(中指)對握」方式抓握積木？', weight: 2, emoji: '👌', kind: 'emoji', description: '使用指尖或指腹對握 (Pincer grasp)，而非僅用手掌抓。' },
+        { id: 'FM-15-18m-Q2', type: '實', text: '可以拿筆在紙上隨意塗鴉？', weight: 1, emoji: '🖍️', kind: 'emoji', description: '能握筆在紙上畫出連續超過 2.5cm 的筆跡。' },
+        { id: 'FM-15-18m-Q3', type: '問', text: '會嘗試使用家中常見物品？', weight: 1, emoji: '🥄', kind: 'emoji', description: '例如：嘗試拿湯匙/叉子靠近嘴巴、拿杯子喝水等動作。' },
+      ],
+    },
+    cognitive_language: {
+      name: '認知語言發展', key: 'cognitive_language', cutoff: 3, maxScore: 5,
+      questions: [
+        { id: 'CL-15-18m-Q1', type: '實/問', text: '★ 可以沒有手勢提示下，聽懂簡單指令並回應？', weight: 2, emoji: '👂', kind: 'emoji', description: '例如：「拿ＯＯ」、「關門」、「打開」等，大人不可以用手比，孩子能聽懂並照做。' },
+        { id: 'CL-15-18m-Q2', type: '實/問', text: '孩子會用自己的「食指」來指向想要的物品？', weight: 1, emoji: '👆', kind: 'emoji', description: '是用食指指，而非拉大人的手或用整個手掌去比。' },
+        { id: 'CL-15-18m-Q3', type: '實/問', text: '會用口語或肢體動作(點頭或搖頭)表示「要」或「不要」？', weight: 1, emoji: '🙅', kind: 'emoji', description: '能明確表達需求或拒絕。' },
+        { id: 'CL-15-18m-Q4', type: '實/問', text: '會說五個以上有意義的「詞彙」？', weight: 1, emoji: '🗣️', kind: 'emoji', description: '要是照顧者聽得懂的有意義詞彙，單純仿說或無意義的發音不算。' },
+      ],
+    },
+    social: {
+      name: '社會發展', key: 'social', cutoff: 3, maxScore: 5,
+      questions: [
+        { id: 'S-15-18m-Q1', type: '實', text: '★ 呼喊孩子名字或小名有反應？', weight: 2, emoji: '🙋', kind: 'emoji', description: '呼喚時有視線接觸或聲音回應。' },
+        { id: 'S-15-18m-Q2', type: '實/問', text: '可以模仿別人的動作？', weight: 1, emoji: '👋', kind: 'emoji', description: '例如：拍手、敲打、拜拜等簡單動作。' },
+        { 
+          id: 'S-15-18m-Q3', type: '實', text: '孩子有怕生、害羞或對外在環境有眼神觀察的行為表現？', weight: 1, emoji: '😳', kind: 'emoji', 
+          description: '請選「是」：這代表孩子有正常的社交警覺性。\n若孩子對陌生人/環境「完全不理會、無反應」，請選「否」。',
+          warning: '💡 發展提示：此階段孩子出現怕生是正常的依附關係表現，反而是「完全不怕生」或「無視他人」需要關注。',
+          allowDoctorAssessment: true 
+        },
+        { id: 'S-15-18m-Q4', type: '實', text: '離開時跟孩子說「掰掰」，孩子會回應？', weight: 1, emoji: '🚪', kind: 'emoji', description: '有視覺注視或者揮手掰掰的回應皆可。' },
+      ],
+    },
+  },
 
   // ==========================================
   // 5. 18-24 個月

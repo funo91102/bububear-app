@@ -6,26 +6,37 @@ import type { AgeGroupKey } from '../types';
 
 // --- 定義道具清單 (依據標準規格更新) ---
 
-// 1. 嬰幼兒組 (6個月 - 1歲半)
-// 包含：6-9m, 9-12m, 12-15m, 15-18m
-const babyTools = [
-  { title: '搖鈴', desc: '1個，測試聽力反應。' },
-  { title: '玩具碗或馬克杯', desc: '1個，直徑約 8-12 公分。' },
-  { title: '積木', desc: '約 2-3 公分，準備 2-4 塊即可。' },
-  { title: '球', desc: '1顆，網球大小，塑膠球或紙揉成球 (直徑約 6-7 公分)。' },
-  // 雖然規格表是通用的，但嬰兒期通常還不需要剪刀/蠟筆/錢幣
+// 1. 嬰兒組 (6個月 - 1歲)
+// 適用：6-9m, 9-12m
+const infantTools = [
+  { title: '搖鈴', desc: '1個，測試聽力與追視反應。' },
+  { title: '積木或小玩具', desc: '2-4 塊，約 2-3 公分，測試抓握與敲打。' },
+  { title: '玩具碗或馬克杯', desc: '1個，直徑約 8-12 公分 (9-12m 適用)。' },
+  { title: '球', desc: '1顆，直徑約 6-7 公分 (9-12m 適用)。' },
 ];
 
-// 2. 幼兒組 (1歲半 - 4歲以上)
-// 包含：1y6m~4y
-const toddlerTools = [
-  { title: '積木', desc: '建議準備 8 塊，約 2-3 公分，測試堆疊。' },
+// 2. 學步兒組 (1歲 - 1歲半) ✨ New: 針對 15-18m 需求調整
+// 適用：12-15m, 15-18m
+const earlyToddlerTools = [
+  { title: '蠟筆與圖畫紙', desc: '1組，測試塗鴉動作 (15-18m 必備)。' },
+  { title: '湯匙', desc: '1支，測試抓握與生活自理 (15-18m 必備)。' },
+  { title: '玩具碗或馬克杯', desc: '1個，測試放入物品或模仿喝水。' },
+  { title: '積木', desc: '約 2-3 公分，準備 2-4 塊，測試精細抓握。' },
+  { title: '貼紙或小葡萄乾', desc: '數個，測試手指精細捏取動作。' },
+];
+
+// 3. 幼兒組 (1歲半 - 3歲以上)
+// 適用：18-24m, 2-3y, 3y+
+const preschoolTools = [
+  { title: '積木', desc: '建議準備 8 塊，測試堆疊高度。' },
   { title: '有蓋小瓶子', desc: '1個，瓶口約 3.5 公分，測試轉開瓶蓋。' },
-  { title: '球', desc: '1顆，網球大小，塑膠球或紙揉成球 (直徑約 6-7 公分)。' },
-  { title: '蠟筆與紙', desc: '1支蠟筆與圖畫紙，測試塗鴉與畫線條。' },
-  { title: '10元玩具錢幣', desc: '3個，測試精細動作與認知。' },
-  { title: '安全剪刀', desc: '1把，測試手部精細動作 (較大年齡)。' },
-  // 視情況可加入圖形板(選備)，但為求精簡先不列入，除非APP題目有強制要求
+  { title: '繪本', desc: '1本，硬頁書為佳，測試翻頁與指認圖案。' },
+  { title: '蠟筆與圖畫紙', desc: '1組，測試畫線條或圓形。' },
+  { title: '湯匙', desc: '1支，測試自我進食能力。' },
+  { title: '球', desc: '1顆，網球大小，測試丟球與踢球。' },
+  // 3歲以上進階題 (視需要顯示)
+  // { title: '10元玩具錢幣', desc: '3個 (3歲以上適用)。' },
+  // { title: '安全剪刀', desc: '1把 (4歲以上適用)。' },
 ];
 
 const ToolPreparationScreen: React.FC = () => {
@@ -33,7 +44,8 @@ const ToolPreparationScreen: React.FC = () => {
 
   // 使用 useMemo 計算需要的道具，避免重複渲染
   const requiredTools = useMemo(() => {
-    if (!childProfile) return toddlerTools; // 預設值
+    // 預設顯示幼兒組 (最完整)
+    if (!childProfile) return preschoolTools; 
 
     const { ageGroupKey } = calculateAge(
       childProfile.birthDate, 
@@ -41,15 +53,22 @@ const ToolPreparationScreen: React.FC = () => {
       childProfile.gestationalAge
     );
 
-    // 定義屬於「嬰兒組」的 Key
-    const babyGroupKeys: AgeGroupKey[] = ['6-9m', '9-12m', '12-15m', '15-18m'];
+    if (!ageGroupKey) return preschoolTools;
 
-    // 加上型別斷言，避免 includes 報錯
-    if (ageGroupKey && babyGroupKeys.includes(ageGroupKey as AgeGroupKey)) {
-      return babyTools;
+    // 分流邏輯
+    const infantKeys: AgeGroupKey[] = ['6-9m', '9-12m'];
+    const earlyToddlerKeys: AgeGroupKey[] = ['12-15m', '15-18m'];
+
+    if (infantKeys.includes(ageGroupKey)) {
+      return infantTools;
+    }
+    
+    if (earlyToddlerKeys.includes(ageGroupKey)) {
+      return earlyToddlerTools;
     }
 
-    return toddlerTools;
+    // 18m 以上 (18-24m, 2-3y, etc.)
+    return preschoolTools;
   }, [childProfile]);
 
   return (

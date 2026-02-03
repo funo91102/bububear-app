@@ -54,6 +54,7 @@ export const calculateAge = (
   let calculationDate = birthDate;
   let isCorrected = false;
 
+  // 早產且小於 24 個月 (2歲) 需進行矯正
   if (isPremature && chronoMonths < 24) {
     const weeksToCorrect = 40 - gestationalWeeks;
     calculationDate = addDaysToDate(birthDate, weeksToCorrect * 7);
@@ -90,6 +91,7 @@ export const calculateAge = (
     ageGroupKey = '12-15m';
     ageGroupDisplay = '12個月 - 15個月';
   } else if (totalMonths >= 15 && totalMonths < 18) {
+    // ✅ 15-18個月判斷區塊 (已確認邏輯正確)
     ageGroupKey = '15-18m';
     ageGroupDisplay = '15個月 - 18個月';
   } else if (totalMonths >= 18 && totalMonths < 24) {
