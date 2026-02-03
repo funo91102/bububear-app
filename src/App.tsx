@@ -1,11 +1,10 @@
-import React, { useState } from 'react'; // ✅ 移除 useEffect
+import { useState } from 'react'; 
 import { AssessmentProvider, useAssessment } from './context/AssessmentContext';
 import AssessmentScreen from './components/AssessmentScreen';
 import ResultsScreen from './components/ResultsScreen';
 import ToolPreparationScreen from './components/ToolPreparationScreen';
 import FeedbackScreen from './components/FeedbackScreen'; 
 import { calculateAge } from './utils/ageCalculator';
-// ✅ 移除 validateScreeningDataIntegrity (已移至 main.tsx)
 import { PlayIcon, ChevronLeftIcon } from './components/Icons';
 import './index.css';
 
@@ -18,7 +17,7 @@ const ConfirmationScreen = () => {
     return null;
   }
 
-  // 解構取得 ageGroupKey，用於更安全的邏輯判斷
+  // 解構取得 ageGroupKey，用於按鈕防呆
   const { exactAge, ageGroupDisplay, ageGroupKey } = calculateAge(
     childProfile.birthDate, 
     new Date(), 
@@ -56,11 +55,12 @@ const ConfirmationScreen = () => {
             <div className="bg-amber-50 p-5 rounded-2xl border border-amber-100 text-center">
                <p className="text-xs text-amber-600/60 font-bold mb-2">即將使用的篩檢量表</p>
                <p className="text-2xl font-black text-amber-500">{ageGroupDisplay}</p>
-               <p className="text-xs text-amber-600/40 mt-2">
-                 {/* 改用 key 判斷是否存在有效量表，避免字串比對錯誤 */}
+               
+               {/* 提示訊息 */}
+               <p className="text-xs text-amber-600/60 mt-2 font-bold">
                  {!ageGroupKey 
-                    ? '目前沒有適合的量表，建議諮詢醫師' 
-                    : '系統將自動載入此階段的圖卡與題目'
+                    ? '⚠️ 目前沒有適合的量表，建議諮詢醫師' 
+                    : '✅ 系統已準備好此階段題目'
                  }
                </p>
             </div>
@@ -76,7 +76,7 @@ const ConfirmationScreen = () => {
             </button>
             <button 
               onClick={() => setScreen('tool_prep')} 
-              // 改用 key 判斷是否鎖住按鈕 (比字串比對安全)
+              // 🛡️ 關鍵防呆：只有當 ageGroupKey 存在時才能按下一步
               disabled={!ageGroupKey}
               className="flex-[2] py-4 rounded-xl font-bold text-white bg-emerald-500 hover:bg-emerald-600 disabled:bg-slate-300 disabled:cursor-not-allowed shadow-lg hover:shadow-emerald-200 transition-all flex items-center justify-center gap-2 active:scale-95"
             >
@@ -118,12 +118,14 @@ const WelcomeScreen = () => {
       finalGestationalAge = weeks;
     }
     
+    // 設定資料
     setChildProfile({
       nickname: nickname,
       birthDate: birthDate,
       gestationalAge: finalGestationalAge 
     });
     
+    // 跳轉到確認頁面
     setScreen('confirmation'); 
   };
 
@@ -209,6 +211,7 @@ const WelcomeScreen = () => {
 const Main = () => {
   const { screen } = useAssessment();
 
+  // 簡單的路由邏輯，根據 Context 中的 screen 狀態顯示對應元件
   switch (screen) {
     case 'welcome': return <WelcomeScreen />;
     case 'confirmation': return <ConfirmationScreen />;
@@ -221,7 +224,6 @@ const Main = () => {
 };
 
 export default function App() {
-  // ✅ App.tsx 現在完全專注於路由與 UI，不負責資料校驗
   return (
     <AssessmentProvider>
       <Main />

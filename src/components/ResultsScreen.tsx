@@ -2,7 +2,7 @@ import React, { useMemo, useRef, useState } from 'react';
 import { useAssessment } from '../context/AssessmentContext';
 import { calculateAge } from '../utils/ageCalculator';
 import { screeningData } from '../constants/screeningData';
-import { CheckIcon, AlertCircleIcon, RefreshIcon, HeartIcon, DownloadIcon } from './Icons';
+import { CheckIcon, AlertCircleIcon, RefreshIcon, HeartIcon, DownloadIcon, StethoscopeIcon } from './Icons';
 import type { DomainKey } from '../types';
 import html2canvas from 'html2canvas';
 
@@ -15,7 +15,8 @@ const DOMAIN_NAMES: Record<DomainKey, string> = {
 };
 
 const ResultsScreen: React.FC = () => {
-  const { assessmentResult, childProfile, feedback, setScreen, resetAssessment } = useAssessment();
+  // ✨ 新增取出 answers 以判斷個別題目狀態
+  const { assessmentResult, childProfile, feedback, setScreen, resetAssessment, answers } = useAssessment();
   const reportRef = useRef<HTMLDivElement>(null); // 用於截圖的報告參照
   const [isExporting, setIsExporting] = useState(false);
 
@@ -80,7 +81,7 @@ const ResultsScreen: React.FC = () => {
   // 3. 定義支持性訊息邏輯 (溫柔而堅定版本)
   const supportTheme = useMemo(() => {
     switch (overallStatus) {
-      case 'referral': // 異常 (深灰色區 -> 轉化為溫潤的玫瑰色)
+      case 'referral': // 異常
         return {
           bg: 'bg-rose-50',
           border: 'border-rose-100',
@@ -92,7 +93,7 @@ const ResultsScreen: React.FC = () => {
           actionTitle: '堅定建議',
           actionDesc: '篩檢並非診斷，但這是一個寶貴的提醒。建議您盡快預約小兒科醫師，進行更精確的發展評估，早期的專業協助是送給寶寶最好的成長禮物。'
         };
-      case 'follow_up': // 邊緣 (淺灰色區 -> 轉化為溫暖的琥珀色)
+      case 'follow_up': // 邊緣
         return {
           bg: 'bg-amber-50',
           border: 'border-amber-100',
@@ -104,7 +105,7 @@ const ResultsScreen: React.FC = () => {
           actionTitle: '支持指引',
           actionDesc: '建議您可以增加親子互動，若您感到不放心，尋求醫師的專業意見也是很好的選擇。'
         };
-      case 'normal': // 正常 (白色區 -> 轉化為安心的翡翠綠)
+      case 'normal': // 正常
       default:
         return {
           bg: 'bg-emerald-50',
@@ -200,18 +201,29 @@ const ResultsScreen: React.FC = () => {
               const status = domainStatuses[key];
               const isPass = status === 'pass' || status === 'max';
               
+              // ✨ 檢查該領域是否有「醫師評估」的項目
+              const ageGroupKey = ageData.key;
+              const questions = ageGroupKey ? screeningData[ageGroupKey]?.[key]?.questions || [] : [];
+              const hasDoctorAssessment = questions.some(q => answers[q.id] === 'doctor_assessment');
+
+              // 決定卡片樣式：醫師評估 > 通過 > 不通過
+              let cardStyle = isPass 
+                ? 'bg-white border-slate-100 shadow-sm' 
+                : 'bg-rose-50/50 border-rose-100 shadow-inner';
+              
+              if (hasDoctorAssessment) {
+                cardStyle = 'bg-indigo-50/50 border-indigo-100 shadow-sm';
+              }
+
               return (
                 <div 
                   key={key} 
-                  className={`flex items-center justify-between p-4 rounded-2xl border transition-all hover:scale-[1.01] ${
-                    isPass 
-                      ? 'bg-white border-slate-100 shadow-sm' 
-                      : 'bg-rose-50/50 border-rose-100 shadow-inner'
-                  }`}
+                  className={`flex items-center justify-between p-4 rounded-2xl border transition-all hover:scale-[1.01] ${cardStyle}`}
                   style={{ animationDelay: `${index * 100}ms` }}
                 >
                   <div className="flex items-center gap-3">
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg ${
+                      hasDoctorAssessment ? 'bg-indigo-100 text-indigo-600' :
                       isPass ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'
                     }`}>
                       {key === 'gross_motor' && '🏃'}
@@ -219,17 +231,25 @@ const ResultsScreen: React.FC = () => {
                       {key === 'cognitive_language' && '🗣️'}
                       {key === 'social' && '😊'}
                     </div>
-                    <span className={`font-bold ${isPass ? 'text-slate-700' : 'text-rose-700'}`}>
+                    <span className={`font-bold ${
+                      hasDoctorAssessment ? 'text-indigo-700' :
+                      isPass ? 'text-slate-700' : 'text-rose-700'
+                    }`}>
                       {DOMAIN_NAMES[key]}
                     </span>
                   </div>
                   
+                  {/* 右側標籤 */}
                   <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-black ${
-                    isPass 
-                      ? 'bg-emerald-100 text-emerald-700' 
-                      : 'bg-white border border-rose-200 text-rose-600'
+                    hasDoctorAssessment ? 'bg-indigo-100 text-indigo-700' :
+                    isPass ? 'bg-emerald-100 text-emerald-700' : 'bg-white border border-rose-200 text-rose-600'
                   }`}>
-                    {isPass ? (
+                    {hasDoctorAssessment ? (
+                      <>
+                        <StethoscopeIcon className="w-3.5 h-3.5 stroke-[2.5]" />
+                        <span>待醫師評估</span>
+                      </>
+                    ) : isPass ? (
                       <>
                         <CheckIcon className="w-3.5 h-3.5 stroke-[3]" />
                         <span>達標</span>
@@ -320,14 +340,28 @@ const ResultsScreen: React.FC = () => {
                 const status = domainStatuses[key];
                 const isPass = status === 'pass' || status === 'max';
                 
+                // ✨ 在報告中也要檢查「醫師評估」
+                const ageGroupKey = ageData.key;
+                const questions = ageGroupKey ? screeningData[ageGroupKey]?.[key]?.questions || [] : [];
+                const hasDoctorAssessment = questions.some(q => answers[q.id] === 'doctor_assessment');
+
                 return (
                   <tr key={key}>
                     <td className="p-3 border border-slate-300 font-bold">{DOMAIN_NAMES[key]}</td>
                     <td className="p-3 border border-slate-300 text-center font-mono text-lg">
                       {score} <span className="text-slate-400 text-sm">/ {maxScore}</span>
                     </td>
-                    <td className={`p-3 border border-slate-300 text-center font-bold ${isPass ? 'text-emerald-600' : 'text-rose-600'}`}>
-                      {isPass ? '通過' : '需追蹤'}
+                    <td className={`p-3 border border-slate-300 text-center font-bold ${
+                      hasDoctorAssessment ? 'text-indigo-600' :
+                      isPass ? 'text-emerald-600' : 'text-rose-600'
+                    }`}>
+                      {hasDoctorAssessment ? (
+                        <span className="flex items-center justify-center gap-1">
+                           <StethoscopeIcon className="w-4 h-4" /> 醫師評估
+                        </span>
+                      ) : (
+                        isPass ? '通過' : '需追蹤'
+                      )}
                     </td>
                   </tr>
                 );

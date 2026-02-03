@@ -1,6 +1,8 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState } from 'react';
+// 修正 1: ReactNode 必須使用 type-only import
+import type { ReactNode } from 'react';
 
-// ▼ 1. 補上 AssessmentResult 型別導入
+// 導入專案型別
 import type { 
   Screen, 
   ChildProfile, 
@@ -18,7 +20,7 @@ interface AssessmentContextType {
   setChildProfile: (profile: ChildProfile) => void;
   
   answers: Answers;
-  // ▼ 2. 統一命名為 setAnswer (符合 AssessmentScreen 的呼叫)
+  // 統一命名為 setAnswer (符合 AssessmentScreen 的呼叫)
   setAnswer: (questionId: string, status: AnswerStatus) => void;
   // (選用) 保留 updateAnswer 作為別名，相容舊程式碼
   updateAnswer: (questionId: string, status: AnswerStatus) => void;
@@ -26,7 +28,7 @@ interface AssessmentContextType {
   feedback: Feedback | null;
   setFeedback: (feedback: Feedback) => void;
 
-  // ▼ 3. 新增：評估結果的狀態與更新函式 (解決結果頁跳回問題)
+  // 新增：評估結果的狀態與更新函式 (解決結果頁跳回問題)
   assessmentResult: AssessmentResult | null;
   setAssessmentResult: (result: AssessmentResult) => void;
 
@@ -45,10 +47,10 @@ export const AssessmentProvider: React.FC<{ children: ReactNode }> = ({ children
   const [answers, setAnswers] = useState<Answers>({});
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   
-  // ▼ 新增結果狀態
+  // 新增結果狀態
   const [assessmentResult, setAssessmentResult] = useState<AssessmentResult | null>(null);
   
-  // ▼ 新增題號狀態 (讓 AssessmentScreen 可以讀寫)
+  // 新增題號狀態 (讓 AssessmentScreen 可以讀寫)
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
 
   // 核心函式：儲存答案
@@ -72,12 +74,12 @@ export const AssessmentProvider: React.FC<{ children: ReactNode }> = ({ children
       childProfile, 
       setChildProfile, 
       answers, 
-      setAnswer,           // ✅ 主要使用這個
-      updateAnswer: setAnswer, // ✅ 相容舊名
+      setAnswer,               // ✅ 主要使用這個
+      updateAnswer: setAnswer, // ✅ 相容舊名 (指向同一個函式)
       feedback,
       setFeedback,
-      assessmentResult,    // ✅ 讓 FeedbackScreen 可以存結果
-      setAssessmentResult, // ✅ 讓 ResultsScreen 可以讀結果
+      assessmentResult,        // ✅ 讓 FeedbackScreen 可以存結果
+      setAssessmentResult,     // ✅ 讓 ResultsScreen 可以讀結果
       currentQuestionIndex,
       setCurrentQuestionIndex,
       resetAssessment 

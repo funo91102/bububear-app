@@ -3,33 +3,48 @@ import { useAssessment } from '../context/AssessmentContext';
 import { CheckIcon } from './Icons'; 
 import { screeningData } from '../constants/screeningData'; 
 import { calculateAge } from '../utils/ageCalculator'; 
-// ▼▼▼ 修正 1：引入正確的型別定義 ▼▼▼
-import type { Answers } from '../types';
+// 修正 1: 移除未使用的 DomainKey
+import type { Answers, AssessmentResult } from '../types';
 
-// ▼▼▼ 修正 2：更新參數型別 (Record<string, string> -> Answers) ▼▼▼
+// --- 純函數：計算分數邏輯 ---
 const calculateResults = (
   answers: Answers, 
   ageGroupKey: string
-) => {
+): AssessmentResult | null => {
+  // 1. 取得該年齡層的題庫
+  // 使用 as keyof 確保 TS 知道這是有效的索引
   const currentData = screeningData[ageGroupKey as keyof typeof screeningData];
+  
   if (!currentData) return null;
 
-  const result: any = {
-    domainScores: {},
-    domainStatuses: {},
+  const result: AssessmentResult = {
+    domainScores: {
+      gross_motor: 0,
+      fine_motor: 0,
+      cognitive_language: 0,
+      social: 0
+    },
+    domainStatuses: {
+      gross_motor: 'fail',
+      fine_motor: 'fail',
+      cognitive_language: 'fail',
+      social: 'fail'
+    },
     overallStatus: 'normal'
   };
 
   let failCount = 0;
 
-  (['gross_motor', 'fine_motor', 'cognitive_language', 'social'] as const).forEach(domain => {
+  // 2. 遍歷四個領域進行計分
+  (['gross_motor', 'fine_motor', 'cognitive_language', 'social'] as const).forEach((domain) => {
     const domainData = currentData[domain];
     const questions = domainData.questions;
     
     let score = 0;
     questions.forEach(q => {
-      // 因為現在 answers 是強型別，TypeScript 知道這裡的值只會是 
-      // 'pass' | 'fail' | 'refused' | 'unanswered' | undefined
+      // ⚠️ 關鍵邏輯：
+      // 只有 'pass' 才得分。
+      // 'fail', 'refused', 'unanswered', 'doctor_assessment' 均為 0 分
       if (answers[q.id] === 'pass') {
         score += q.weight;
       }
@@ -37,6 +52,7 @@ const calculateResults = (
 
     result.domainScores[domain] = score;
 
+    // 3. 判斷該領域是否達標
     if (score === domainData.maxScore) {
       result.domainStatuses[domain] = 'max';
     } else if (score >= domainData.cutoff) {
@@ -47,12 +63,13 @@ const calculateResults = (
     }
   });
 
+  // 4. 判斷總體結果
   if (failCount >= 2) {
-    result.overallStatus = 'referral';
+    result.overallStatus = 'referral';  // 需轉介 (2個以上領域未達標)
   } else if (failCount === 1) {
-    result.overallStatus = 'follow_up';
+    result.overallStatus = 'follow_up'; // 需追蹤 (1個領域未達標)
   } else {
-    result.overallStatus = 'normal';
+    result.overallStatus = 'normal';    // 發展正常
   }
 
   return result;
@@ -71,11 +88,13 @@ const FeedbackScreen: React.FC = () => {
   const [notes, setNotes] = useState('');
 
   const handleSubmit = () => {
+    // 1. 儲存家長回饋
     setFeedback({
       anxietyScore,
       notes
     });
 
+    // 2. 執行計分 (含防呆檢查)
     if (childProfile) {
       const { ageGroupKey } = calculateAge(
         childProfile.birthDate, 
@@ -83,15 +102,24 @@ const FeedbackScreen: React.FC = () => {
         childProfile.gestationalAge
       );
 
-      // 這裡傳入的 answers 已經符合 Answers 型別，不會再報錯
-      const results = calculateResults(answers, ageGroupKey);
+      // 修正 2: 嚴格檢查 ageGroupKey 是否存在
+      if (ageGroupKey) {
+        const results = calculateResults(answers, ageGroupKey);
 
-      if (results) {
-        setAssessmentResult(results); 
+        if (results) {
+          setAssessmentResult(results); 
+          // 修正 3: 只有計算成功才跳轉，避免空白結果頁
+          setScreen('results'); 
+        } else {
+          console.error("計算失敗：無法取得該年齡層資料");
+          // 可以在這裡加入一個簡單的 alert 或錯誤提示
+          alert("系統錯誤：無法計算結果，請重新操作");
+        }
+      } else {
+        console.error("錯誤：無效的年齡層 Key");
+        alert("資料異常：無法判定年齡層");
       }
     }
-    
-    setScreen('results'); 
   };
 
   return (
