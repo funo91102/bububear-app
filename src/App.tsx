@@ -109,13 +109,23 @@ const WelcomeScreen = () => {
     }
 
     let finalGestationalAge = 40; 
+    
+    // 邏輯：早產兒週數判定
     if (isPremature) {
       const weeks = parseInt(gestationalWeeks);
-      if (!weeks || weeks < 20 || weeks > 36) {
-        alert('請輸入有效的妊娠週數 (通常為 20 ~ 36 週)');
+      
+      // 1. 基本檢核
+      if (!weeks || weeks < 20) {
+        alert('請輸入有效的妊娠週數 (需大於 20 週)');
         return;
       }
-      finalGestationalAge = weeks;
+      
+      // 2. 自動判斷：如果輸入 >= 37，視為足月 (40週)
+      if (weeks >= 37) {
+        finalGestationalAge = 40; 
+      } else {
+        finalGestationalAge = weeks;
+      }
     }
     
     // 設定資料
@@ -183,7 +193,7 @@ const WelcomeScreen = () => {
               <label className="block text-sm font-bold text-slate-600 mb-1 ml-1">出生時的妊娠週數</label>
               <input 
                 type="number" value={gestationalWeeks} onChange={(e) => setGestationalWeeks(e.target.value)}
-                placeholder="例如：32" min="20" max="36"
+                placeholder="例如：32" min="20" 
                 className="w-full px-4 py-3 rounded-xl bg-slate-100 border-2 border-slate-200 focus:border-emerald-400 focus:bg-white transition-all outline-none font-bold text-slate-700 placeholder:font-normal"
               />
             </div>
@@ -199,9 +209,17 @@ const WelcomeScreen = () => {
         </div>
       </div>
       
+      {/* 頁尾資訊區：已將警示語加回 */}
       <div className="mt-8 text-center space-y-1">
-        <p className="text-xs text-slate-400 font-medium opacity-60">本工具依據衛福部兒童發展連續篩檢量表設計</p>
-        <p className="text-xs text-rose-400 font-bold opacity-80">測試結果僅供參考，請與您的兒科醫師進行正式評估！</p>
+        <p className="text-xs text-slate-400 font-bold opacity-80">
+           傅炯皓醫師 製作
+        </p>
+        <p className="text-xs text-slate-400 font-medium opacity-60">
+           本工具依據衛福部兒童發展連續篩檢量表設計
+        </p>
+        <p className="text-xs text-rose-400 font-bold opacity-80 mt-1">
+           測試結果僅供參考，請與您的兒科醫師進行正式評估！
+        </p>
       </div>
     </div>
   );
@@ -211,7 +229,6 @@ const WelcomeScreen = () => {
 const Main = () => {
   const { screen } = useAssessment();
 
-  // 簡單的路由邏輯，根據 Context 中的 screen 狀態顯示對應元件
   switch (screen) {
     case 'welcome': return <WelcomeScreen />;
     case 'confirmation': return <ConfirmationScreen />;
