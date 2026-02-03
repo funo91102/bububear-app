@@ -2,26 +2,30 @@ import React, { useMemo } from 'react';
 import { useAssessment } from '../context/AssessmentContext';
 import { calculateAge } from '../utils/ageCalculator';
 import { CheckIcon, PlayIcon } from './Icons';
-// ✅ 修正 1: 路徑改為正確的 '../types'
 import type { AgeGroupKey } from '../types'; 
 
-// --- 定義道具清單 ---
+// --- 定義道具清單 (依據標準規格更新) ---
 
 // 1. 嬰幼兒組 (6個月 - 1歲半)
+// 包含：6-9m, 9-12m, 12-15m, 15-18m
 const babyTools = [
-  { title: '鮮豔的小玩具', desc: '如紅色毛線球、布偶，用於測試追視。' },
-  { title: '手搖鈴', desc: '或任何會發出聲音的小玩具，測試聽力反應。' },
-  { title: '杯子', desc: '不易破的塑膠杯或紙杯。' },
-  { title: '小積木 (約2-3公分)', desc: '1-2個小積木、方塊或瓶蓋，測試抓握。' },
+  { title: '搖鈴', desc: '1個，測試聽力反應。' },
+  { title: '玩具碗或馬克杯', desc: '1個，直徑約 8-12 公分。' },
+  { title: '積木', desc: '約 2-3 公分，準備 2-4 塊即可。' },
+  { title: '球', desc: '1顆，網球大小，塑膠球或紙揉成球 (直徑約 6-7 公分)。' },
+  // 雖然規格表是通用的，但嬰兒期通常還不需要剪刀/蠟筆/錢幣
 ];
 
 // 2. 幼兒組 (1歲半 - 4歲以上)
+// 包含：1y6m~4y
 const toddlerTools = [
-  { title: '積木 (約2-3公分)', desc: '建議準備 4-8 個，用於測試堆疊能力。' },
-  { title: '小球', desc: '網球大小或捲起來的襪子球，測試丟球動作。' },
-  { title: '有蓋小瓶子', desc: '如藥瓶或小寶特瓶，測試轉開瓶蓋能力。' },
-  { title: '筆與紙', desc: '蠟筆或粗鉛筆，讓孩子塗鴉或畫線條。' },
-  { title: '圖卡/繪本', desc: 'APP 會有電子圖卡，但準備實體書也可觀察翻頁。' },
+  { title: '積木', desc: '建議準備 8 塊，約 2-3 公分，測試堆疊。' },
+  { title: '有蓋小瓶子', desc: '1個，瓶口約 3.5 公分，測試轉開瓶蓋。' },
+  { title: '球', desc: '1顆，網球大小，塑膠球或紙揉成球 (直徑約 6-7 公分)。' },
+  { title: '蠟筆與紙', desc: '1支蠟筆與圖畫紙，測試塗鴉與畫線條。' },
+  { title: '10元玩具錢幣', desc: '3個，測試精細動作與認知。' },
+  { title: '安全剪刀', desc: '1把，測試手部精細動作 (較大年齡)。' },
+  // 視情況可加入圖形板(選備)，但為求精簡先不列入，除非APP題目有強制要求
 ];
 
 const ToolPreparationScreen: React.FC = () => {
@@ -31,7 +35,6 @@ const ToolPreparationScreen: React.FC = () => {
   const requiredTools = useMemo(() => {
     if (!childProfile) return toddlerTools; // 預設值
 
-    // ✅ 修正 2: 變數名稱改為正確的 ageGroupKey
     const { ageGroupKey } = calculateAge(
       childProfile.birthDate, 
       new Date(), 
@@ -41,7 +44,7 @@ const ToolPreparationScreen: React.FC = () => {
     // 定義屬於「嬰兒組」的 Key
     const babyGroupKeys: AgeGroupKey[] = ['6-9m', '9-12m', '12-15m', '15-18m'];
 
-    // ✅ 修正 3: 加上型別斷言，避免 includes 報錯
+    // 加上型別斷言，避免 includes 報錯
     if (ageGroupKey && babyGroupKeys.includes(ageGroupKey as AgeGroupKey)) {
       return babyTools;
     }
@@ -60,7 +63,7 @@ const ToolPreparationScreen: React.FC = () => {
         <div className="text-center mb-8">
           <h2 className="text-2xl font-black text-slate-800 text-shadow-sm">準備一下小道具！</h2>
           <p className="text-slate-500 text-sm mt-2 font-medium">
-            為了讓篩檢更順利，<br/>建議您先準備好以下物品：
+            為了符合標準化施測規格，<br/>請您協助準備以下物品：
           </p>
         </div>
 
