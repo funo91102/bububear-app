@@ -5,9 +5,9 @@ import { screeningData } from '../constants/screeningData';
 // 引入防呆機制工具
 import { isAgeGroupImplemented, getImplementedAgeGroups } from '../utils/screeningEngine'; 
 import { CheckIcon, XMarkIcon, AlertIcon, AlertCircleIcon, StethoscopeIcon } from './Icons'; 
-// 修正路徑：通常指向 types 資料夾或 types.ts 即可
+// 修正路徑：指向 types 資料夾
 import type { AnswerStatus } from '../types';
-// ✅ 從外部匯入 Flashcard 元件
+// ✅ 從外部匯入 Flashcard 元件 (支援單圖/多圖模式)
 import { Flashcard } from './Flashcard';
 
 const AssessmentScreen: React.FC = () => {
@@ -118,7 +118,6 @@ const AssessmentScreen: React.FC = () => {
   };
 
   const handleDoctorAssessment = () => {
-    // 需確保 AnswerStatus 類型定義中有包含 'doctor_assessment'
     confirmAnswer('doctor_assessment');
   };
 
@@ -152,32 +151,32 @@ const AssessmentScreen: React.FC = () => {
           {/* ✨✨✨ 使用型別守衛 (Type Guard) 與預設值 ✨✨✨ */}
           <div className="w-full mb-6 min-h-[240px] flex items-center justify-center bg-slate-50 rounded-3xl p-1 border border-slate-100/50 relative overflow-hidden">
             
-            {/* 情況 1: 多圖卡題 */}
+            {/* 情況 1: 多圖卡題 (18-24m 專用，如認知題2、語言題3) */}
             {currentQuestion.kind === 'multi_image' && (
               <Flashcard 
                 mode="multi" 
-                // 🛠 FIX: 加上 || [] 防止 undefined 錯誤
+                // 🛠 FIX: 加上 || [] 防止 undefined 導致 .map() 報錯
                 options={currentQuestion.flashcardOptions || []} 
               />
             )}
 
-            {/* 情況 2: 單圖卡題 */}
+            {/* 情況 2: 單圖卡題 (保留相容性) */}
             {currentQuestion.kind === 'single_image' && (
               <Flashcard 
                 mode="single" 
-                // 🛠 FIX: 加上 || "" 防止 undefined 錯誤
+                // 🛠 FIX: 加上 || "" 防止 undefined
                 src={currentQuestion.flashcardImageSrc || ""} 
               />
             )}
 
-            {/* 情況 3: Emoji 題 */}
+            {/* 情況 3: Emoji 題 (標準題型) */}
             {currentQuestion.kind === 'emoji' && (
               <div className="text-8xl drop-shadow-sm select-none animate-in zoom-in duration-500">
                 {currentQuestion.emoji}
               </div>
             )}
             
-             {/* Fallback */}
+             {/* Fallback (若無定義 kind) */}
              {!currentQuestion.kind && (
                <div className="text-8xl drop-shadow-sm select-none opacity-50">
                  🧸

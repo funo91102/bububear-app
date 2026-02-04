@@ -1,4 +1,4 @@
-import { useState } from 'react'; 
+import React, { useState } from 'react'; // ✅ 修正1: 加入 React 解決 TS2686 錯誤
 import { AssessmentProvider, useAssessment } from './context/AssessmentContext';
 import AssessmentScreen from './components/AssessmentScreen';
 import ResultsScreen from './components/ResultsScreen';
@@ -8,9 +8,8 @@ import { calculateAge } from './utils/ageCalculator';
 import { PlayIcon, ChevronLeftIcon } from './components/Icons';
 import './index.css';
 
-// ✅ 定義目前已開放測試的年齡層 (Whitelist)
-// 修正重點：加入 '15-18m' 以解除封鎖
-const supportedAgeGroups = ['6-9m', '9-12m', '12-15m', '15-18m', '2-3y'];
+// ✅ 修正2: 務必確認這裡有 '18-24m'，否則按鈕會被鎖住
+const supportedAgeGroups = ['6-9m', '9-12m', '12-15m', '15-18m', '18-24m', '2-3y'];
 
 // --- 內部元件 1: 確認資訊頁面 ---
 const ConfirmationScreen = () => {
@@ -21,19 +20,16 @@ const ConfirmationScreen = () => {
     return null;
   }
 
-  // 解構取得 ageGroupKey，用於按鈕防呆
   const { exactAge, ageGroupDisplay, ageGroupKey } = calculateAge(
     childProfile.birthDate, 
     new Date(), 
     childProfile.gestationalAge
   );
 
-  // ✅ 判斷該年齡層是否已在開放清單中
   const isSupported = ageGroupKey && supportedAgeGroups.includes(ageGroupKey);
 
   return (
     <div className="min-h-screen bg-sky-50 flex flex-col items-center justify-center p-6 relative overflow-hidden">
-       {/* 背景裝飾 */}
        <div className="absolute top-10 left-10 w-32 h-32 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
        <div className="absolute -bottom-8 right-10 w-32 h-32 bg-indigo-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
 
@@ -44,7 +40,6 @@ const ConfirmationScreen = () => {
           </div>
           
           <div className="space-y-4">
-            {/* 寶貝資訊 */}
             <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 flex items-center justify-between">
                <div>
                  <p className="text-xs text-slate-400 font-bold mb-1">寶貝暱稱</p>
@@ -58,7 +53,6 @@ const ConfirmationScreen = () => {
                </div>
             </div>
 
-            {/* 量表資訊 */}
             <div className={`p-5 rounded-2xl border text-center transition-colors ${
               !ageGroupKey ? 'bg-slate-50 border-slate-200' :
               isSupported ? 'bg-amber-50 border-amber-100' : 'bg-slate-50 border-slate-200'
@@ -68,7 +62,6 @@ const ConfirmationScreen = () => {
                  {ageGroupDisplay}
                </p>
                
-               {/* ✅ 提示訊息：依據支援狀態顯示不同文字 */}
                <div className="mt-2 text-xs font-bold">
                  {!ageGroupKey ? (
                    <span className="text-rose-500">⚠️ 目前沒有適合的量表，建議諮詢醫師</span>
@@ -77,7 +70,7 @@ const ConfirmationScreen = () => {
                  ) : (
                    <div className="text-amber-600/80 flex flex-col items-center">
                      <span>🚧 此階段題庫建置中</span>
-                     <span className="font-normal opacity-80 mt-1">目前開放：6m-18m, 2-3y</span>
+                     <span className="font-normal opacity-80 mt-1">目前開放：6m-18m, 18-24m, 2-3y</span>
                    </div>
                  )}
                </div>
@@ -94,7 +87,6 @@ const ConfirmationScreen = () => {
             </button>
             <button 
               onClick={() => setScreen('tool_prep')} 
-              // 🛡️ 關鍵防呆：只有當支援此年齡層時才能按下一步
               disabled={!isSupported}
               className="flex-[2] py-4 rounded-xl font-bold text-white bg-emerald-500 hover:bg-emerald-600 disabled:bg-slate-300 disabled:cursor-not-allowed shadow-lg hover:shadow-emerald-200 transition-all flex items-center justify-center gap-2 active:scale-95"
             >
@@ -128,17 +120,12 @@ const WelcomeScreen = () => {
 
     let finalGestationalAge = 40; 
     
-    // 邏輯：早產兒週數判定
     if (isPremature) {
       const weeks = parseInt(gestationalWeeks);
-      
-      // 1. 基本檢核
       if (!weeks || weeks < 20) {
         alert('請輸入有效的妊娠週數 (需大於 20 週)');
         return;
       }
-      
-      // 2. 自動判斷：如果輸入 >= 37，視為足月 (40週)
       if (weeks >= 37) {
         finalGestationalAge = 40; 
       } else {
@@ -146,20 +133,17 @@ const WelcomeScreen = () => {
       }
     }
     
-    // 設定資料
     setChildProfile({
       nickname: nickname,
       birthDate: birthDate,
       gestationalAge: finalGestationalAge 
     });
     
-    // 跳轉到確認頁面
     setScreen('confirmation'); 
   };
 
   return (
     <div className="min-h-screen bg-sky-50 flex flex-col items-center justify-center p-6 relative overflow-hidden">
-      {/* 背景裝飾 */}
       <div className="absolute top-10 left-10 w-32 h-32 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
       <div className="absolute top-10 right-10 w-32 h-32 bg-cyan-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
       <div className="absolute -bottom-8 left-20 w-32 h-32 bg-indigo-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
@@ -227,7 +211,6 @@ const WelcomeScreen = () => {
         </div>
       </div>
       
-      {/* 頁尾資訊區 */}
       <div className="mt-8 text-center space-y-1">
         <p className="text-xs text-slate-400 font-bold opacity-80">
            傅炯皓醫師 製作
@@ -243,7 +226,6 @@ const WelcomeScreen = () => {
   );
 };
 
-// --- 主畫面路由切換 ---
 const Main = () => {
   const { screen } = useAssessment();
 

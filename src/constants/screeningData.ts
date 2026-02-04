@@ -404,9 +404,139 @@ export const screeningData: ScreeningData = {
   },
 
   // ==========================================
-  // 5. 18-24 個月
+  // 5. 18-24 個月 (新增並標準化 ✅)
   // ==========================================
-  '18-24m': createEmptyAgeGroupData(),
+  '18-24m': {
+    gross_motor: {
+      name: '粗大動作', key: 'gross_motor', cutoff: 3, maxScore: 4,
+      questions: [
+        { 
+          id: 'GM-18-24m-Q1', type: '實', weight: 2, 
+          text: '★ 可以放手走得很穩？', 
+          description: '可以走得很穩超過10步以上，不會搖搖晃晃，也不需張開手保持平衡。', 
+          emoji: '🚶', kind: 'emoji' 
+        },
+        { 
+          id: 'GM-18-24m-Q2', type: '實', weight: 1, 
+          text: '走路步態是否正常？', 
+          description: '觀察重點：雙腳與肩同寬，手自然下垂。無持續踮腳尖 (tip-toe) 或剪刀式步態 (scissor gait)。', 
+          emoji: '👣', kind: 'emoji',
+          allowDoctorAssessment: true 
+        },
+        { 
+          id: 'GM-18-24m-Q3', type: '實', weight: 1, 
+          text: '可以自行蹲下後再站起來？', 
+          description: '不扶物即可蹲下，起身時也不需手撐膝蓋 (Gowers\'s sign)。', 
+          emoji: '⬇️', kind: 'emoji' 
+        },
+      ],
+    },
+    fine_motor: {
+      name: '精細動作', key: 'fine_motor', cutoff: 3, maxScore: 5,
+      questions: [
+        { 
+          id: 'FM-18-24m-Q1', type: '實/問', weight: 1, 
+          text: '嘗試打開蓋子？', 
+          description: '大人不幫忙固定容器時，孩子能自己拿著容器，有嘗試打開（掀開、轉開、鬆開皆可）的動作。', 
+          emoji: '🧴', kind: 'emoji' 
+        },
+        { 
+          id: 'FM-18-24m-Q2', type: '實', weight: 2, 
+          text: '★ 可以疊至少 2 塊積木？', 
+          description: '使用拇指及食(中)指對握拿取積木，並疊高至少兩塊。(非用手掌抓)', 
+          emoji: '🧱', kind: 'emoji' 
+        },
+        { 
+          id: 'FM-18-24m-Q3', type: '實/問', weight: 1, 
+          text: '可以穩定將圓形/三角形/正方形放入對應形狀板(桶)？', 
+          description: '不示範下獨自完成至少一種形狀。(60秒內)', 
+          emoji: '🔺', kind: 'emoji' 
+        },
+        { 
+          id: 'FM-18-24m-Q4', type: '實', weight: 1, 
+          text: '可以打開繪本翻頁？', 
+          description: '可以一頁頁翻書（一次翻一頁，至少翻 2 頁）。', 
+          emoji: '📖', kind: 'emoji' 
+        },
+      ],
+    },
+    cognitive_language: {
+      name: '認知語言發展', key: 'cognitive_language', cutoff: 5, maxScore: 6,
+      questions: [
+        { 
+          id: 'CL-18-24m-Q1', type: '實', weight: 1, 
+          text: '會指出至少三個身體部位？', 
+          description: '例如：眼睛、嘴巴、手。完全不理會或指錯不算通過。', 
+          emoji: '👀', kind: 'emoji' 
+        },
+        { 
+          id: 'CL-18-24m-Q2', type: '實', weight: 2, 
+          text: '★ (圖卡1) 指著圖卡問『你看！○○在哪裡？』', 
+          description: '可穩定答對至少三題 (湯匙、小狗、汽車、皮球)。\n👉 施測指引：大人問，孩子指認。', 
+          kind: 'multi_image',
+          flashcardOptions: [
+            { label: '湯匙', imageSrc: '/assets/card1_spoon.png', bgColor: 'bg-rose-50' },
+            { label: '小狗', imageSrc: '/assets/card1_dog.png', bgColor: 'bg-amber-50' },
+            { label: '汽車', imageSrc: '/assets/card1_car.png', bgColor: 'bg-sky-50' },
+            { label: '皮球', imageSrc: '/assets/card1_ball.png', bgColor: 'bg-emerald-50' },
+          ]
+        },
+        { 
+          id: 'CL-18-24m-Q3', type: '實', weight: 1, 
+          text: '○ (圖卡1) 指著圖卡問『這是什麼？』', 
+          description: '可穩定答對至少三題。大人聽得懂意義即可。\n👉 施測指引：大人指，孩子回答名稱。', 
+          kind: 'multi_image',
+          flashcardOptions: [
+            { label: '湯匙', imageSrc: '/assets/card1_spoon.png', bgColor: 'bg-rose-50' },
+            { label: '小狗', imageSrc: '/assets/card1_dog.png', bgColor: 'bg-amber-50' },
+            { label: '汽車', imageSrc: '/assets/card1_car.png', bgColor: 'bg-sky-50' },
+            { label: '皮球', imageSrc: '/assets/card1_ball.png', bgColor: 'bg-emerald-50' },
+          ]
+        },
+        { 
+          id: 'CL-18-24m-Q4', type: '實/問', weight: 1, 
+          text: '會穩定說出 10 個(含)以上有意義的詞彙？', 
+          description: '只能仿說不算。', 
+          emoji: '🗣️', kind: 'emoji' 
+        },
+        { 
+          id: 'CL-18-24m-Q5', type: '實/問', weight: 1, 
+          text: '○ 會說的有意義詞彙至少有 2 個(含)以上？', 
+          description: '若已通過上一題 (10個詞彙)，此題自動通過。', 
+          emoji: '💬', kind: 'emoji' 
+        },
+      ],
+    },
+    social: {
+      name: '社會發展', key: 'social', cutoff: 4, maxScore: 5,
+      questions: [
+        { 
+          id: 'S-18-24m-Q1', type: '實', weight: 2, 
+          text: '★ 呼喊孩子名字或小名可以穩定反應？', 
+          description: '每次呼喊皆有穩定視線或聲音反應。', 
+          emoji: '🙋', kind: 'emoji' 
+        },
+        { 
+          id: 'S-18-24m-Q2', type: '實', weight: 1, 
+          text: '詢問孩子『OO在哪裡？』孩子會去看向物品方向或用手比？', 
+          description: '例如問：門在哪裡？燈在哪裡？孩子能看或指向詢問的物品。', 
+          emoji: '👉', kind: 'emoji' 
+        },
+        { 
+          id: 'S-18-24m-Q3', type: '問', weight: 1, 
+          text: '會使用至少一種常見的生活用品？', 
+          description: '例如：拿手機靠近耳朵、拿梳子梳頭髮、拿杯子喝水。仿大人使用方式。', 
+          emoji: '📱', kind: 'emoji' 
+        },
+        { 
+          id: 'S-18-24m-Q4', type: '問', weight: 1, 
+          text: '玩遊戲時會有假扮的玩法？', 
+          description: '例如餵娃娃喝水或假裝餵大人吃東西等。', 
+          emoji: '🧸', kind: 'emoji' 
+        },
+      ],
+    },
+  },
 
   // ==========================================
   // 6. 2-3 歲 (已依據 PDF 標準化修正 ✅)
