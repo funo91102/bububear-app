@@ -38,6 +38,7 @@ const ResultsScreen: React.FC = () => {
 
   // 1. 取得該年齡層的滿分數據與顯示名稱
   const ageData = useMemo(() => {
+    // 解構出 ageGroupDisplay (正確的中文標題)
     const { ageGroupKey, exactAge, ageGroupDisplay } = calculateAge(
       childProfile.birthDate, 
       new Date(), 
@@ -46,7 +47,7 @@ const ResultsScreen: React.FC = () => {
     return {
       key: ageGroupKey,
       displayAge: exactAge,
-      displayTitle: ageGroupDisplay,
+      displayTitle: ageGroupDisplay, // 儲存正確的顯示名稱
       data: ageGroupKey ? screeningData[ageGroupKey] : null
     };
   }, [childProfile]);
@@ -177,6 +178,7 @@ const ResultsScreen: React.FC = () => {
               const maxScore = domainData?.maxScore || 0;
               const cutoff = domainData?.cutoff || 0;
 
+              // 🚀 修復重點 1：如果滿分為 0 (如 6-9m 的社會發展)，則直接隱藏不顯示
               if (maxScore === 0) return null;
 
               const questions = domainData?.questions || [];
@@ -258,11 +260,14 @@ const ResultsScreen: React.FC = () => {
                 const domainData = ageData.data?.[key];
                 const maxScore = domainData?.maxScore || 0;
                 const cutoff = domainData?.cutoff || '-';
+                
+                // 🚀 修復重點 1：匯出報告同樣需要隱藏 0 分項目
                 if (maxScore === 0) return null;
+
                 const status = domainStatuses[key];
                 const isPass = status === 'pass' || status === 'max';
                 
-                // 🚀 修復關鍵：補這行定義！
+                // 🚀 修復重點 2：補上這行定義，解決變數未定義錯誤
                 const ageGroupKey = ageData.key; 
                 
                 const questions = ageGroupKey ? screeningData[ageGroupKey]?.[key]?.questions || [] : [];
