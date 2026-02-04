@@ -5,7 +5,7 @@ const createEmptyDomain = (name: string, key: DomainKey): Domain => ({
   name,
   key,
   cutoff: 0,
-  maxScore: 0,
+  // maxScore 已移除，由引擎動態計算
   questions: [],
 });
 
@@ -20,11 +20,11 @@ const createEmptyAgeGroupData = (): AgeGroupData => ({
 export const screeningData: ScreeningData = {
   
   // ==========================================
-  // 1. 6-9 個月 (已依據 PDF 標準化修正 ✅)
+  // 1. 6-9 個月
   // ==========================================
   '6-9m': {
     gross_motor: {
-      name: '粗大動作', key: 'gross_motor', cutoff: 5, maxScore: 6,
+      name: '粗大動作', key: 'gross_motor', cutoff: 5,
       questions: [
         { 
           id: 'GM-6-9m-Q1', type: '實', weight: 1,
@@ -63,7 +63,7 @@ export const screeningData: ScreeningData = {
       ]
     },
     fine_motor: {
-      name: '精細動作', key: 'fine_motor', cutoff: 4, maxScore: 5,
+      name: '精細動作', key: 'fine_motor', cutoff: 4,
       questions: [
         { 
           id: 'FM-6-9m-Q1', type: '問', weight: 1, 
@@ -92,7 +92,7 @@ export const screeningData: ScreeningData = {
       ]
     },
     cognitive_language: {
-      name: '認知語言社會', key: 'cognitive_language', cutoff: 4, maxScore: 5,
+      name: '認知語言社會', key: 'cognitive_language', cutoff: 4,
       questions: [
         { 
           id: 'CL-6-9m-Q1', type: '實', weight: 1, 
@@ -120,11 +120,11 @@ export const screeningData: ScreeningData = {
   },
 
   // ==========================================
-  // 2. 9-12 個月 (已依據 PDF 標準化修正 ✅)
+  // 2. 9-12 個月
   // ==========================================
   '9-12m': {
     gross_motor: {
-      name: '粗大動作', key: 'gross_motor', cutoff: 4, maxScore: 5,
+      name: '粗大動作', key: 'gross_motor', cutoff: 4,
       questions: [
         { 
           id: 'GM-9-12m-Q1', type: '實', weight: 1,
@@ -151,7 +151,7 @@ export const screeningData: ScreeningData = {
       ]
     },
     fine_motor: {
-      name: '精細動作', key: 'fine_motor', cutoff: 3, maxScore: 4,
+      name: '精細動作', key: 'fine_motor', cutoff: 3,
       questions: [
         { 
           id: 'FM-9-12m-Q1', type: '實/問', weight: 1,
@@ -175,7 +175,7 @@ export const screeningData: ScreeningData = {
       ]
     },
     cognitive_language: {
-      name: '認知語言發展', key: 'cognitive_language', cutoff: 3, maxScore: 4,
+      name: '認知語言發展', key: 'cognitive_language', cutoff: 3,
       questions: [
         { id: 'CL-9-12m-Q1', type: '實/問', weight: 1, text: '會一手各拿一個玩具相互敲打？', emoji: '🥁', kind: 'emoji' },
         { id: 'CL-9-12m-Q2', type: '實/問', weight: 1, text: '玩具在孩子面前掉在視線外，孩子眼神會去找？', description: '有出現尋找積木的眼神或動作。', emoji: '👀', kind: 'emoji' },
@@ -184,7 +184,7 @@ export const screeningData: ScreeningData = {
       ]
     },
     social: {
-      name: '社會發展', key: 'social', cutoff: 4, maxScore: 5,
+      name: '社會發展', key: 'social', cutoff: 4,
       questions: [
         { id: 'S-9-12m-Q1', type: '實/問', weight: 1, text: '★ 呼喊孩子名字或小名有反應？', description: '有視線或聲音反應。', emoji: '👂', kind: 'emoji' },
         { id: 'S-9-12m-Q2', type: '實/問', weight: 1, text: '會嘗試模仿大人的簡單動作或表情？', description: '例如：嘟嘴、拍手、拜拜等。', emoji: '👋', kind: 'emoji' },
@@ -196,11 +196,11 @@ export const screeningData: ScreeningData = {
   },
 
   // ==========================================
-  // 3. 12-15 個月 (已依據 PDF 標準化修正 ✅)
+  // 3. 12-15 個月
   // ==========================================
   '12-15m': {
     gross_motor: {
-      name: '粗大動作', key: 'gross_motor', cutoff: 3, maxScore: 4,
+      name: '粗大動作', key: 'gross_motor', cutoff: 3,
       questions: [
         { 
           id: 'GM-12-15m-Q1', type: '實/問', weight: 2,
@@ -223,7 +223,7 @@ export const screeningData: ScreeningData = {
       ],
     },
     fine_motor: {
-      name: '精細動作', key: 'fine_motor', cutoff: 3, maxScore: 4,
+      name: '精細動作', key: 'fine_motor', cutoff: 3,
       questions: [
         { 
           id: 'FM-12-15m-Q1', type: '實/問', weight: 2,
@@ -246,7 +246,7 @@ export const screeningData: ScreeningData = {
       ],
     },
     cognitive_language: {
-      name: '認知語言發展', key: 'cognitive_language', cutoff: 4, maxScore: 6,
+      name: '認知語言發展', key: 'cognitive_language', cutoff: 4,
       questions: [
         { 
           id: 'CL-12-15m-Q1', type: '實', weight: 1,
@@ -281,7 +281,7 @@ export const screeningData: ScreeningData = {
       ],
     },
     social: {
-      name: '社會發展', key: 'social', cutoff: 3, maxScore: 5, 
+      name: '社會發展', key: 'social', cutoff: 3, 
       questions: [
         { id: 'S-12-15m-Q1', type: '實/問', weight: 2, text: '★ 呼喊孩子名字或小名有反應？', description: '有視線或聲音反應。', emoji: '🙋', kind: 'emoji' },
         { id: 'S-12-15m-Q2', type: '實/問', weight: 1, text: '可以和大人玩肢體互動遊戲？', description: '例如交替擊掌 (high five) 或炒蘿蔔等遊戲。', emoji: '🙌', kind: 'emoji' },
@@ -292,11 +292,11 @@ export const screeningData: ScreeningData = {
   },
 
   // ==========================================
-  // 4. 15-18 個月 (已依據 PDF 標準化修正 ✅)
+  // 4. 15-18 個月
   // ==========================================
   '15-18m': {
     gross_motor: {
-      name: '粗大動作', key: 'gross_motor', cutoff: 3, maxScore: 4,
+      name: '粗大動作', key: 'gross_motor', cutoff: 3,
       questions: [
         { 
           id: 'GM-15-18m-Q1', type: '實', weight: 1,
@@ -320,7 +320,7 @@ export const screeningData: ScreeningData = {
       ],
     },
     fine_motor: {
-      name: '精細動作', key: 'fine_motor', cutoff: 3, maxScore: 4,
+      name: '精細動作', key: 'fine_motor', cutoff: 3,
       questions: [
         { 
           id: 'FM-15-18m-Q1', type: '實', weight: 2,
@@ -343,7 +343,7 @@ export const screeningData: ScreeningData = {
       ],
     },
     cognitive_language: {
-      name: '認知語言發展', key: 'cognitive_language', cutoff: 3, maxScore: 5,
+      name: '認知語言發展', key: 'cognitive_language', cutoff: 3,
       questions: [
         { 
           id: 'CL-15-18m-Q1', type: '實/問', weight: 2,
@@ -372,7 +372,7 @@ export const screeningData: ScreeningData = {
       ],
     },
     social: {
-      name: '社會發展', key: 'social', cutoff: 3, maxScore: 5,
+      name: '社會發展', key: 'social', cutoff: 3,
       questions: [
         { 
           id: 'S-15-18m-Q1', type: '實', weight: 2,
@@ -404,11 +404,11 @@ export const screeningData: ScreeningData = {
   },
 
   // ==========================================
-  // 5. 18-24 個月 (新增並標準化 ✅)
+  // 5. 18-24 個月
   // ==========================================
   '18-24m': {
     gross_motor: {
-      name: '粗大動作', key: 'gross_motor', cutoff: 3, maxScore: 4,
+      name: '粗大動作', key: 'gross_motor', cutoff: 3,
       questions: [
         { 
           id: 'GM-18-24m-Q1', type: '實', weight: 2, 
@@ -432,7 +432,7 @@ export const screeningData: ScreeningData = {
       ],
     },
     fine_motor: {
-      name: '精細動作', key: 'fine_motor', cutoff: 3, maxScore: 5,
+      name: '精細動作', key: 'fine_motor', cutoff: 3,
       questions: [
         { 
           id: 'FM-18-24m-Q1', type: '實/問', weight: 1, 
@@ -461,7 +461,7 @@ export const screeningData: ScreeningData = {
       ],
     },
     cognitive_language: {
-      name: '認知語言發展', key: 'cognitive_language', cutoff: 5, maxScore: 6,
+      name: '認知語言發展', key: 'cognitive_language', cutoff: 5,
       questions: [
         { 
           id: 'CL-18-24m-Q1', type: '實', weight: 1, 
@@ -508,7 +508,7 @@ export const screeningData: ScreeningData = {
       ],
     },
     social: {
-      name: '社會發展', key: 'social', cutoff: 4, maxScore: 5,
+      name: '社會發展', key: 'social', cutoff: 4,
       questions: [
         { 
           id: 'S-18-24m-Q1', type: '實', weight: 2, 
@@ -539,11 +539,11 @@ export const screeningData: ScreeningData = {
   },
 
   // ==========================================
-  // 6. 2-3 歲 (已依據 PDF 標準化修正 ✅)
+  // 6. 2-3 歲
   // ==========================================
   '2-3y': {
     gross_motor: {
-      name: '粗大動作', key: 'gross_motor', cutoff: 3, maxScore: 4,
+      name: '粗大動作', key: 'gross_motor', cutoff: 3,
       questions: [
         { 
           id: 'GM-2-3y-Q1', type: '實/問', weight: 2, 
@@ -566,7 +566,7 @@ export const screeningData: ScreeningData = {
       ],
     },
     fine_motor: {
-      name: '精細動作', key: 'fine_motor', cutoff: 4, maxScore: 5, 
+      name: '精細動作', key: 'fine_motor', cutoff: 4, 
       questions: [
         { 
           id: 'FM-2-3y-Q1', type: '實', weight: 2, 
@@ -595,7 +595,7 @@ export const screeningData: ScreeningData = {
       ],
     },
     cognitive_language: {
-      name: '認知語言發展', key: 'cognitive_language', cutoff: 4, maxScore: 5, 
+      name: '認知語言發展', key: 'cognitive_language', cutoff: 4, 
       questions: [
         { 
           id: 'CL-2-3y-Q1', type: '問', weight: 1, 
@@ -630,7 +630,7 @@ export const screeningData: ScreeningData = {
       ],
     },
     social: {
-      name: '社會發展', key: 'social', cutoff: 4, maxScore: 5, 
+      name: '社會發展', key: 'social', cutoff: 4, 
       questions: [
         { 
           id: 'S-2-3y-Q1', type: '實', weight: 2, 
@@ -655,9 +655,110 @@ export const screeningData: ScreeningData = {
   },
 
   // ==========================================
-  // 7. 3歲以上 (Placeholder)
+  // 7. 3-4 歲 (量表七)
   // ==========================================
-  '3-4y': createEmptyAgeGroupData(), 
+  '3-4y': {
+    gross_motor: {
+      name: '粗大動作', key: 'gross_motor', cutoff: 3,
+      questions: [
+        { 
+          id: 'GM-3-4y-Q1', type: '實', weight: 2,
+          text: '★ 單腳站立 2 秒鐘以上？', 
+          description: '不扶東西，雙手可張開維持平衡。任一腳皆可，需維持 2 秒以上不落地。',
+          emoji: '🦩', kind: 'emoji'
+        },
+        { 
+          id: 'GM-3-4y-Q2', type: '實', weight: 1,
+          text: '可以兩腳同時離地向前跳？', 
+          description: '雙腳同時起跳並向前落地 (非跑步跨越)。',
+          emoji: '🐰', kind: 'emoji'
+        },
+        { 
+          id: 'GM-3-4y-Q3', type: '實/問', weight: 1,
+          text: '上樓梯時可以雙腳交替(一腳一階)？', 
+          description: '不需雙腳踏在同一階才上下一階。可稍微扶扶手，但主要力量在腳。',
+          emoji: '🪜', kind: 'emoji'
+        }
+      ]
+    },
+    fine_motor: {
+      name: '精細動作', key: 'fine_motor', cutoff: 3,
+      questions: [
+        { 
+          id: 'FM-3-4y-Q1', type: '實', weight: 2,
+          text: '★ 能將 3 枚硬幣「單手」一個一個收入手掌心？', 
+          description: '先將硬幣放在桌上，讓孩子用單手撿起第一枚握在掌心，接著(不放下第一枚)撿起第二枚、第三枚。\n👉 測試掌內操作能力。',
+          emoji: '🪙', kind: 'emoji'
+        },
+        { 
+          id: 'FM-3-4y-Q2', type: '實', weight: 1,
+          text: '可以模仿畫出圓形 (封閉的圓)？', 
+          description: '大人示範畫一個圓，孩子能模仿畫出大致封閉的圓形 (非螺旋線)。',
+          emoji: '⭕', kind: 'emoji'
+        },
+        { 
+          id: 'FM-3-4y-Q3', type: '實', weight: 1,
+          text: '會使用安全剪刀沿著直線剪紙？', 
+          description: '能連續剪開紙張。⚠️ 請務必使用兒童安全剪刀並在家長監督下進行。',
+          emoji: '✂️', kind: 'emoji'
+        }
+      ]
+    },
+    cognitive_language: {
+      name: '認知語言發展', key: 'cognitive_language', cutoff: 3,
+      questions: [
+        { 
+          id: 'CL-3-4y-Q1', type: '實', weight: 2,
+          text: '★ (圖卡3) 大小比較：指著球問『哪一個比較大/小？』', 
+          description: '需兩次問答皆正確。先問「哪一個比較大？」，再問「哪一個比較小？」。',
+          emoji: '⚖️', kind: 'image', // 使用單張圖卡顯示
+          imageSrc: '/assets/card3_combined.png'
+        },
+        { 
+          id: 'CL-3-4y-Q2', type: '實/問', weight: 1,
+          text: '能正確說出自己的全名？', 
+          description: '包含姓氏與名字。',
+          emoji: '🗣️', kind: 'emoji'
+        },
+        { 
+          id: 'CL-3-4y-Q3', type: '問', weight: 1,
+          text: '會回答生活邏輯問題？(例如：肚子餓了怎麼辦？)', 
+          description: '能回答如「吃飯」、「找媽媽」等符合邏輯的答案。',
+          emoji: '🤔', kind: 'emoji'
+        },
+        { 
+          id: 'CL-3-4y-Q4', type: '實/問', weight: 1,
+          text: '能正確運用代名詞 (你、我、他)？', 
+          description: '說話時能正確使用「我要...」、「給你...」等。',
+          emoji: '👉', kind: 'emoji'
+        }
+      ]
+    },
+    social: {
+      name: '社會發展', key: 'social', cutoff: 3,
+      questions: [
+        { 
+          id: 'S-3-4y-Q1', type: '實/問', weight: 2,
+          text: '★ 會自己穿不用綁鞋帶的鞋子？', 
+          description: '能分辨左右腳並自行穿好 (魔鬼氈或便鞋)。',
+          emoji: '👟', kind: 'emoji'
+        },
+        { 
+          id: 'S-3-4y-Q2', type: '問', weight: 1,
+          text: '會與其他小朋友輪流玩玩具或分享？', 
+          description: '在大人引導下願意輪流或分享。',
+          emoji: '🤝', kind: 'emoji'
+        },
+        { 
+          id: 'S-3-4y-Q3', type: '問', weight: 1,
+          text: '白天已可自行如廁 (不需包尿布)？', 
+          description: '能表達尿意並自行(或協助下)完成如廁。',
+          emoji: '🚽', kind: 'emoji'
+        }
+      ]
+    }
+  },
+  
   '4-5y': createEmptyAgeGroupData(), 
   '5-7y': createEmptyAgeGroupData(),
 };

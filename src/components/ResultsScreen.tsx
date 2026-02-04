@@ -2,8 +2,10 @@ import React, { useMemo, useRef, useState } from 'react';
 import { useAssessment } from '../context/AssessmentContext';
 import { calculateAge } from '../utils/ageCalculator';
 import { screeningData } from '../constants/screeningData';
+// ✅ 修正 1: 引入 getDomainMaxScore 用於動態計算滿分
+import { getDomainMaxScore } from '../utils/screeningEngine';
 import { CheckIcon, AlertCircleIcon, RefreshIcon, HeartIcon, DownloadIcon, StethoscopeIcon } from './Icons';
-import type { DomainKey } from '../types';
+import type { DomainKey, AgeGroupKey } from '../types';
 import html2canvas from 'html2canvas';
 
 // 定義面向的中文章節名稱
@@ -56,9 +58,14 @@ const ResultsScreen: React.FC = () => {
   const resolvedDomains = useMemo(() => {
     if (!ageData.key) return [];
     
+    // 強制型別斷言，確保 key 存在
+    const currentAgeKey = ageData.key as AgeGroupKey;
+
     return (Object.keys(DOMAIN_NAMES) as DomainKey[]).map(key => {
-      const domainData = screeningData[ageData.key!][key]; // 確信 key 存在
-      const maxScore = domainData.maxScore;
+      const domainData = screeningData[currentAgeKey][key];
+      
+      // ✅ 修正 2: 使用工具函式動態計算滿分 (因為資料庫已移除 maxScore 欄位)
+      const maxScore = getDomainMaxScore(currentAgeKey, key);
       
       // 若滿分為 0，回傳 null (後續濾掉)
       if (maxScore === 0) return null;
@@ -74,7 +81,7 @@ const ResultsScreen: React.FC = () => {
         key,
         name: DOMAIN_NAMES[key],
         score: domainScores[key],
-        maxScore,
+        maxScore, // 這現在是動態計算出來的正確數值
         cutoff: domainData.cutoff,
         hasDoctorAssessment,
         isPass,

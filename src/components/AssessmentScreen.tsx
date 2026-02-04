@@ -5,8 +5,8 @@ import { screeningData } from '../constants/screeningData';
 // 引入防呆機制工具
 import { isAgeGroupImplemented, getImplementedAgeGroups } from '../utils/screeningEngine'; 
 import { CheckIcon, XMarkIcon, AlertIcon, AlertCircleIcon, StethoscopeIcon } from './Icons'; 
-// 修正路徑：指向 types 資料夾
-import type { AnswerStatus } from '../types';
+// ✅ 修正 1：改用重構後的新型別名稱 StandardAnswerStatus
+import type { StandardAnswerStatus } from '../types';
 // ✅ 從外部匯入 Flashcard 元件 (支援單圖/多圖模式)
 import { Flashcard } from './Flashcard';
 
@@ -16,7 +16,6 @@ const AssessmentScreen: React.FC = () => {
   const [showResilience, setShowResilience] = useState(false);
 
   // 1. 計算年齡與 Key
-  // 注意：這裡的 fallback 物件結構需與 ageCalculator.ts 回傳一致
   const ageKeyInfo = useMemo(() => {
     if (!childProfile) {
       return { 
@@ -24,7 +23,8 @@ const AssessmentScreen: React.FC = () => {
         ageGroupDisplay: '', 
         ageGroupKey: null, 
         isPremature: false, 
-        isCorrected: false 
+        isCorrected: false,
+        ageInMonths: 0
       };
     }
     return calculateAge(childProfile.birthDate, new Date(), childProfile.gestationalAge);
@@ -34,7 +34,6 @@ const AssessmentScreen: React.FC = () => {
 
   // 🛡️ 防呆檢查：如果選到了未建置的年齡層，顯示「建置中」
   if (ageGroupKey && !isAgeGroupImplemented(ageGroupKey)) {
-    // 動態產生可用年齡層字串
     const availableAges = getImplementedAgeGroups().join(', ');
 
     return (
@@ -86,7 +85,6 @@ const AssessmentScreen: React.FC = () => {
   // --- 錯誤處理介面 ---
   if (!childProfile) return <div>資料載入錯誤</div>;
   
-  // 雙重保險
   if (questions.length === 0) {
      return (
         <div className="min-h-screen flex flex-col items-center justify-center p-10 text-center bg-slate-50">
@@ -112,7 +110,8 @@ const AssessmentScreen: React.FC = () => {
   
   const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
 
-  const handleAnswer = (status: AnswerStatus) => {
+  // ✅ 修正 2：使用重構後的 StandardAnswerStatus
+  const handleAnswer = (status: StandardAnswerStatus) => {
     if (status === 'fail') setShowResilience(true);
     else confirmAnswer(status);
   };
@@ -121,7 +120,8 @@ const AssessmentScreen: React.FC = () => {
     confirmAnswer('doctor_assessment');
   };
 
-  const confirmAnswer = (status: AnswerStatus) => {
+  // ✅ 修正 3：使用重構後的 StandardAnswerStatus
+  const confirmAnswer = (status: StandardAnswerStatus) => {
     setAnswer(currentQuestion.id, status);
     setShowResilience(false);
     
@@ -148,35 +148,32 @@ const AssessmentScreen: React.FC = () => {
       <div className="flex-1 overflow-y-auto p-4 pb-56">
         <div className="bg-white rounded-[2.5rem] p-6 shadow-sm border border-slate-200/50 flex flex-col items-center">
           
-          {/* ✨✨✨ 使用型別守衛 (Type Guard) 與預設值 ✨✨✨ */}
           <div className="w-full mb-6 min-h-[240px] flex items-center justify-center bg-slate-50 rounded-3xl p-1 border border-slate-100/50 relative overflow-hidden">
             
-            {/* 情況 1: 多圖卡題 (18-24m 專用，如認知題2、語言題3) */}
+            {/* 情況 1: 多圖卡題 (18-24m 專用) */}
             {currentQuestion.kind === 'multi_image' && (
               <Flashcard 
                 mode="multi" 
-                // 🛠 FIX: 加上 || [] 防止 undefined 導致 .map() 報錯
                 options={currentQuestion.flashcardOptions || []} 
               />
             )}
 
-            {/* 情況 2: 單圖卡題 (保留相容性) */}
-            {currentQuestion.kind === 'single_image' && (
+            {/* ✅ 修正 4：支援 3-4 歲量表七的單圖顯示 (kind: 'image') */}
+            {(currentQuestion.kind === 'image' || currentQuestion.kind === 'single_image') && (
               <Flashcard 
                 mode="single" 
-                // 🛠 FIX: 加上 || "" 防止 undefined
-                src={currentQuestion.flashcardImageSrc || ""} 
+                src={currentQuestion.imageSrc || currentQuestion.flashcardImageSrc || ""} 
               />
             )}
 
-            {/* 情況 3: Emoji 題 (標準題型) */}
+            {/* 情況 2: Emoji 題 (標準題型) */}
             {currentQuestion.kind === 'emoji' && (
               <div className="text-8xl drop-shadow-sm select-none animate-in zoom-in duration-500">
                 {currentQuestion.emoji}
               </div>
             )}
             
-             {/* Fallback (若無定義 kind) */}
+             {/* Fallback */}
              {!currentQuestion.kind && (
                <div className="text-8xl drop-shadow-sm select-none opacity-50">
                  🧸
@@ -224,7 +221,7 @@ const AssessmentScreen: React.FC = () => {
       {/* 底部按鈕區 */}
       <div className={`bg-white/95 backdrop-blur-xl border-t border-slate-200 p-6 pb-12 fixed bottom-0 w-full max-w-md flex flex-col gap-4 z-40 shadow-[0_-15px_35px_-15px_rgba(0,0,0,0.1)]`}>
         
-        {/* ✅ 醫師評估按鈕 (最重要的部分) */}
+        {/* 醫師評估按鈕 */}
         {currentQuestion.allowDoctorAssessment && (
           <button
             onClick={handleDoctorAssessment}
