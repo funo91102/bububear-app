@@ -38,7 +38,6 @@ const ResultsScreen: React.FC = () => {
 
   // 1. 取得該年齡層的滿分數據與顯示名稱
   const ageData = useMemo(() => {
-    // 解構出 ageGroupDisplay (正確的中文標題)
     const { ageGroupKey, exactAge, ageGroupDisplay } = calculateAge(
       childProfile.birthDate, 
       new Date(), 
@@ -47,22 +46,60 @@ const ResultsScreen: React.FC = () => {
     return {
       key: ageGroupKey,
       displayAge: exactAge,
-      displayTitle: ageGroupDisplay, // 儲存正確的顯示名稱
+      displayTitle: ageGroupDisplay,
       data: ageGroupKey ? screeningData[ageGroupKey] : null
     };
   }, [childProfile]);
 
-  // 2. 匯出圖片功能
+  // ✨ 優化 3: Single Source of Truth (單一真理來源)
+  // 統一處理所有面向的邏輯 (分數、狀態、醫師評估、隱藏)，供 App 與 報告 共用
+  const resolvedDomains = useMemo(() => {
+    if (!ageData.key) return [];
+    
+    return (Object.keys(DOMAIN_NAMES) as DomainKey[]).map(key => {
+      const domainData = screeningData[ageData.key!][key]; // 確信 key 存在
+      const maxScore = domainData.maxScore;
+      
+      // 若滿分為 0，回傳 null (後續濾掉)
+      if (maxScore === 0) return null;
+
+      const questions = domainData.questions;
+      // 檢查是否有「醫師評估」
+      const hasDoctorAssessment = questions.some(q => answers[q.id] === 'doctor_assessment');
+      
+      const status = domainStatuses[key];
+      const isPass = status === 'pass' || status === 'max';
+
+      return {
+        key,
+        name: DOMAIN_NAMES[key],
+        score: domainScores[key],
+        maxScore,
+        cutoff: domainData.cutoff,
+        hasDoctorAssessment,
+        isPass,
+        status
+      };
+    }).filter((item): item is NonNullable<typeof item> => item !== null); // 過濾掉 null
+  }, [ageData.key, answers, domainStatuses, domainScores]);
+
+
+  // 2. 匯出圖片功能 (✨ 優化 2: 增強截圖參數)
   const handleExportImage = async () => {
     if (!reportRef.current) return;
     setIsExporting(true);
     try {
       await new Promise(resolve => setTimeout(resolve, 100));
+      
       const canvas = await html2canvas(reportRef.current, {
         scale: 2, 
         backgroundColor: '#ffffff',
         useCORS: true, 
+        // 關鍵參數：確保在手機上也能截出完整的電腦版寬度報告
+        windowWidth: reportRef.current.scrollWidth,
+        windowHeight: reportRef.current.scrollHeight
       });
+
       const image = canvas.toDataURL('image/png');
       const link = document.createElement('a');
       link.href = image;
@@ -76,12 +113,15 @@ const ResultsScreen: React.FC = () => {
     }
   };
 
-  // 3. 定義支持性訊息邏輯
+  // 3. 定義支持性訊息邏輯 (✨ 優化 1: 明確定義樣式，避免字串替換風險)
   const supportTheme = useMemo(() => {
     switch (overallStatus) {
       case 'referral': 
         return {
-          bg: 'bg-rose-50', border: 'border-rose-100', text: 'text-rose-800',
+          bg: 'bg-rose-50', 
+          bgStrong: 'bg-rose-100', // 明確定義深色背景
+          border: 'border-rose-100', // 明確定義邊框色
+          text: 'text-rose-800',
           icon: '💪', bearEmoji: '🐻‍⚕️',
           title: '讓我們一起多留意寶寶的進度',
           description: `每個寶寶都有自己的成長節奏。目前的篩檢結果顯示，在部分領域寶寶可能需要更多專業的評估與引導。`,
@@ -90,7 +130,10 @@ const ResultsScreen: React.FC = () => {
         };
       case 'follow_up':
         return {
-          bg: 'bg-amber-50', border: 'border-amber-100', text: 'text-amber-800',
+          bg: 'bg-amber-50', 
+          bgStrong: 'bg-amber-100',
+          border: 'border-amber-100',
+          text: 'text-amber-800',
           icon: '🌱', bearEmoji: '🐻',
           title: '寶寶正在努力進步中！',
           description: '目前寶寶在部分項目已達標，但有些地方還需要我們多花點心力陪伴練習。',
@@ -100,7 +143,10 @@ const ResultsScreen: React.FC = () => {
       case 'normal':
       default:
         return {
-          bg: 'bg-emerald-50', border: 'border-emerald-100', text: 'text-emerald-800',
+          bg: 'bg-emerald-50', 
+          bgStrong: 'bg-emerald-100',
+          border: 'border-emerald-100',
+          text: 'text-emerald-800',
           icon: '🌟', bearEmoji: '🥳',
           title: '太棒了！寶寶如期達標',
           description: '目前的發展都在安全範圍內，請繼續維持優質的親子互動與共讀。',
@@ -154,7 +200,8 @@ const ResultsScreen: React.FC = () => {
             <p className="text-slate-600 text-sm font-medium leading-relaxed opacity-90">{supportTheme.description}</p>
           </div>
           <div className="p-6 bg-white">
-            <div className={`rounded-xl p-5 border-l-4 ${supportTheme.bg.replace('bg-', 'bg-').replace('50', '100')} ${supportTheme.border.replace('border-', 'border-l-')}`}>
+            {/* 使用明確的 class name，不再使用 replace */}
+            <div className={`rounded-xl p-5 border-l-4 ${supportTheme.bgStrong} ${supportTheme.border.replace('border-', 'border-l-')}`}>
               <h3 className={`text-sm font-black mb-2 flex items-center gap-2 ${supportTheme.text}`}>
                 <span className="text-lg">{supportTheme.icon}</span>
                 {supportTheme.actionTitle}
@@ -164,58 +211,44 @@ const ResultsScreen: React.FC = () => {
           </div>
         </div>
 
-        {/* 評估詳情 (App畫面) */}
+        {/* 評估詳情 (App畫面) - 直接使用 resolvedDomains */}
         <div className="mt-8 space-y-4">
           <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest ml-2 flex items-center gap-2"><span>📊</span> 各面向評估詳情</h3>
           <div className="grid grid-cols-1 gap-3">
-            {(Object.keys(DOMAIN_NAMES) as DomainKey[]).map((key, index) => {
-              const status = domainStatuses[key];
-              const isPass = status === 'pass' || status === 'max';
-              const score = domainScores[key];
-              
-              const ageGroupKey = ageData.key;
-              const domainData = ageGroupKey ? screeningData[ageGroupKey]?.[key] : null;
-              const maxScore = domainData?.maxScore || 0;
-              const cutoff = domainData?.cutoff || 0;
-
-              // 🚀 修復重點 1：如果滿分為 0 (如 6-9m 的社會發展)，則直接隱藏不顯示
-              if (maxScore === 0) return null;
-
-              const questions = domainData?.questions || [];
-              const hasDoctorAssessment = questions.some(q => answers[q.id] === 'doctor_assessment');
-
-              let cardStyle = isPass ? 'bg-white border-slate-100 shadow-sm' : 'bg-rose-50/50 border-rose-100 shadow-inner';
-              if (hasDoctorAssessment) cardStyle = 'bg-indigo-50/50 border-indigo-100 shadow-sm';
+            {resolvedDomains.map((item, index) => {
+              // 樣式邏輯保持不變，但數據來源更乾淨
+              let cardStyle = item.isPass ? 'bg-white border-slate-100 shadow-sm' : 'bg-rose-50/50 border-rose-100 shadow-inner';
+              if (item.hasDoctorAssessment) cardStyle = 'bg-indigo-50/50 border-indigo-100 shadow-sm';
 
               return (
-                <div key={key} className={`flex flex-col p-4 rounded-2xl border transition-all hover:scale-[1.01] ${cardStyle}`} style={{ animationDelay: `${index * 100}ms` }}>
+                <div key={item.key} className={`flex flex-col p-4 rounded-2xl border transition-all hover:scale-[1.01] ${cardStyle}`} style={{ animationDelay: `${index * 100}ms` }}>
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-3">
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg ${
-                        hasDoctorAssessment ? 'bg-indigo-100 text-indigo-600' :
-                        isPass ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'
+                        item.hasDoctorAssessment ? 'bg-indigo-100 text-indigo-600' :
+                        item.isPass ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'
                       }`}>
-                        {key === 'gross_motor' && '🏃'}
-                        {key === 'fine_motor' && '🙌'}
-                        {key === 'cognitive_language' && '🗣️'}
-                        {key === 'social' && '😊'}
+                        {item.key === 'gross_motor' && '🏃'}
+                        {item.key === 'fine_motor' && '🙌'}
+                        {item.key === 'cognitive_language' && '🗣️'}
+                        {item.key === 'social' && '😊'}
                       </div>
                       <div>
-                        <span className={`font-bold block ${hasDoctorAssessment ? 'text-indigo-700' : isPass ? 'text-slate-700' : 'text-rose-700'}`}>
-                          {DOMAIN_NAMES[key]}
+                        <span className={`font-bold block ${item.hasDoctorAssessment ? 'text-indigo-700' : item.isPass ? 'text-slate-700' : 'text-rose-700'}`}>
+                          {item.name}
                         </span>
-                        <span className="text-[10px] text-slate-400 font-medium">及格標準: {cutoff} 分</span>
+                        <span className="text-[10px] text-slate-400 font-medium">及格標準: {item.cutoff} 分</span>
                       </div>
                     </div>
                     <div className="text-right">
-                       <div className={`text-sm font-black ${isPass ? 'text-slate-700' : 'text-rose-600'}`}>
-                         {score} <span className="text-slate-400 text-xs font-normal">/ {maxScore}</span>
+                       <div className={`text-sm font-black ${item.isPass ? 'text-slate-700' : 'text-rose-600'}`}>
+                         {item.score} <span className="text-slate-400 text-xs font-normal">/ {item.maxScore}</span>
                        </div>
                        <div className={`flex items-center justify-end gap-1 mt-0.5 text-xs font-bold ${
-                         hasDoctorAssessment ? 'text-indigo-600' : isPass ? 'text-emerald-600' : 'text-rose-500'
+                         item.hasDoctorAssessment ? 'text-indigo-600' : item.isPass ? 'text-emerald-600' : 'text-rose-500'
                        }`}>
-                          {hasDoctorAssessment ? (<><StethoscopeIcon className="w-3 h-3" /><span>待評估</span></>) : 
-                           isPass ? (<><CheckIcon className="w-3 h-3" /><span>達標</span></>) : 
+                          {item.hasDoctorAssessment ? (<><StethoscopeIcon className="w-3 h-3" /><span>待評估</span></>) : 
+                           item.isPass ? (<><CheckIcon className="w-3 h-3" /><span>達標</span></>) : 
                            (<><AlertCircleIcon className="w-3 h-3" /><span>需留意</span></>)}
                        </div>
                     </div>
@@ -255,32 +288,15 @@ const ResultsScreen: React.FC = () => {
               <tr className="bg-slate-100"><th className="p-3 text-left border border-slate-300 w-1/3">發展面向</th><th className="p-3 text-center border border-slate-300 w-1/4">得分 / 滿分</th><th className="p-3 text-center border border-slate-300 w-1/4">及格標準</th><th className="p-3 text-center border border-slate-300 w-1/6">狀態</th></tr>
             </thead>
             <tbody>
-              {(Object.keys(DOMAIN_NAMES) as DomainKey[]).map((key) => {
-                const score = domainScores[key];
-                const domainData = ageData.data?.[key];
-                const maxScore = domainData?.maxScore || 0;
-                const cutoff = domainData?.cutoff || '-';
-                
-                // 🚀 修復重點 1：匯出報告同樣需要隱藏 0 分項目
-                if (maxScore === 0) return null;
-
-                const status = domainStatuses[key];
-                const isPass = status === 'pass' || status === 'max';
-                
-                // 🚀 修復重點 2：補上這行定義，解決變數未定義錯誤
-                const ageGroupKey = ageData.key; 
-                
-                const questions = ageGroupKey ? screeningData[ageGroupKey]?.[key]?.questions || [] : [];
-                const hasDoctorAssessment = questions.some(q => answers[q.id] === 'doctor_assessment');
-                return (
-                  <tr key={key}>
-                    <td className="p-3 border border-slate-300 font-bold text-slate-700">{DOMAIN_NAMES[key]}</td>
-                    <td className="p-3 border border-slate-300 text-center font-mono font-bold text-slate-800">{score} <span className="text-slate-400 text-xs">/ {maxScore}</span></td>
-                    <td className="p-3 border border-slate-300 text-center text-slate-500 font-medium">≥ {cutoff}</td>
-                    <td className={`p-3 border border-slate-300 text-center font-bold ${hasDoctorAssessment ? 'text-indigo-600 bg-indigo-50' : isPass ? 'text-emerald-600 bg-emerald-50' : 'text-rose-600 bg-rose-50'}`}>{hasDoctorAssessment ? '醫師評估' : isPass ? '通過' : '需追蹤'}</td>
-                  </tr>
-                );
-              })}
+              {/* ✨ 這裡也直接使用 resolvedDomains，保證與 App 畫面數據來源完全一致 */}
+              {resolvedDomains.map((item) => (
+                <tr key={item.key}>
+                  <td className="p-3 border border-slate-300 font-bold text-slate-700">{item.name}</td>
+                  <td className="p-3 border border-slate-300 text-center font-mono font-bold text-slate-800">{item.score} <span className="text-slate-400 text-xs">/ {item.maxScore}</span></td>
+                  <td className="p-3 border border-slate-300 text-center text-slate-500 font-medium">≥ {item.cutoff}</td>
+                  <td className={`p-3 border border-slate-300 text-center font-bold ${item.hasDoctorAssessment ? 'text-indigo-600 bg-indigo-50' : item.isPass ? 'text-emerald-600 bg-emerald-50' : 'text-rose-600 bg-rose-50'}`}>{item.hasDoctorAssessment ? '醫師評估' : item.isPass ? '通過' : '需追蹤'}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
