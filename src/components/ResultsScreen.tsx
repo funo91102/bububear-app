@@ -190,7 +190,7 @@ const ResultsScreen: React.FC = () => {
           </div>
         </div>
 
-        {/* 3. 各面向細項列表 */}
+        {/* 3. 各面向細項列表 (App 畫面) */}
         <div className="mt-8 space-y-4">
           <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest ml-2 flex items-center gap-2">
             <span>📊</span> 各面向評估詳情
@@ -200,16 +200,17 @@ const ResultsScreen: React.FC = () => {
             {(Object.keys(DOMAIN_NAMES) as DomainKey[]).map((key, index) => {
               const status = domainStatuses[key];
               const isPass = status === 'pass' || status === 'max';
-              const score = domainScores[key];
               
-              // 取得該面向的詳細資料 (Cutoff & MaxScore)
-              const domainData = ageData.data?.[key];
-              const cutoff = domainData?.cutoff || 0;
+              // 取得該面向的詳細資料
+              const ageGroupKey = ageData.key;
+              const domainData = ageGroupKey ? screeningData[ageGroupKey]?.[key] : null;
               const maxScore = domainData?.maxScore || 0;
 
+              // 🚀 關鍵修正：若該面向總分為 0 (例如 6-9m 的社會發展)，則隱藏不顯示
+              if (maxScore === 0) return null;
+
               // ✨ 檢查該領域是否有「醫師評估」的項目
-              const ageGroupKey = ageData.key;
-              const questions = ageGroupKey ? screeningData[ageGroupKey]?.[key]?.questions || [] : [];
+              const questions = domainData?.questions || [];
               const hasDoctorAssessment = questions.some(q => answers[q.id] === 'doctor_assessment');
 
               // 決定卡片樣式：醫師評估 > 通過 > 不通過
@@ -224,62 +225,48 @@ const ResultsScreen: React.FC = () => {
               return (
                 <div 
                   key={key} 
-                  className={`flex flex-col p-4 rounded-2xl border transition-all hover:scale-[1.01] ${cardStyle}`}
+                  className={`flex items-center justify-between p-4 rounded-2xl border transition-all hover:scale-[1.01] ${cardStyle}`}
                   style={{ animationDelay: `${index * 100}ms` }}
                 >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg ${
-                        hasDoctorAssessment ? 'bg-indigo-100 text-indigo-600' :
-                        isPass ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'
-                      }`}>
-                        {key === 'gross_motor' && '🏃'}
-                        {key === 'fine_motor' && '🙌'}
-                        {key === 'cognitive_language' && '🗣️'}
-                        {key === 'social' && '😊'}
-                      </div>
-                      <div>
-                        <span className={`font-bold block ${
-                          hasDoctorAssessment ? 'text-indigo-700' :
-                          isPass ? 'text-slate-700' : 'text-rose-700'
-                        }`}>
-                          {DOMAIN_NAMES[key]}
-                        </span>
-                        {/* 顯示及格標準 */}
-                        <span className="text-[10px] text-slate-400 font-medium">
-                          及格標準: {cutoff} 分
-                        </span>
-                      </div>
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg ${
+                      hasDoctorAssessment ? 'bg-indigo-100 text-indigo-600' :
+                      isPass ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'
+                    }`}>
+                      {key === 'gross_motor' && '🏃'}
+                      {key === 'fine_motor' && '🙌'}
+                      {key === 'cognitive_language' && '🗣️'}
+                      {key === 'social' && '😊'}
                     </div>
-                    
-                    {/* 右側分數與狀態 */}
-                    <div className="text-right">
-                       <div className={`text-sm font-black ${isPass ? 'text-slate-700' : 'text-rose-600'}`}>
-                         {score} <span className="text-slate-400 text-xs font-normal">/ {maxScore}</span>
-                       </div>
-                       
-                       <div className={`flex items-center justify-end gap-1 mt-0.5 text-xs font-bold ${
-                         hasDoctorAssessment ? 'text-indigo-600' :
-                         isPass ? 'text-emerald-600' : 'text-rose-500'
-                       }`}>
-                          {hasDoctorAssessment ? (
-                             <>
-                               <StethoscopeIcon className="w-3 h-3" />
-                               <span>待評估</span>
-                             </>
-                          ) : isPass ? (
-                             <>
-                               <CheckIcon className="w-3 h-3" />
-                               <span>達標</span>
-                             </>
-                          ) : (
-                             <>
-                               <AlertCircleIcon className="w-3 h-3" />
-                               <span>需留意</span>
-                             </>
-                          )}
-                       </div>
-                    </div>
+                    <span className={`font-bold ${
+                      hasDoctorAssessment ? 'text-indigo-700' :
+                      isPass ? 'text-slate-700' : 'text-rose-700'
+                    }`}>
+                      {DOMAIN_NAMES[key]}
+                    </span>
+                  </div>
+                  
+                  {/* 右側標籤 */}
+                  <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-black ${
+                    hasDoctorAssessment ? 'bg-indigo-100 text-indigo-700' :
+                    isPass ? 'bg-emerald-100 text-emerald-700' : 'bg-white border border-rose-200 text-rose-600'
+                  }`}>
+                    {hasDoctorAssessment ? (
+                      <>
+                        <StethoscopeIcon className="w-3.5 h-3.5 stroke-[2.5]" />
+                        <span>待醫師評估</span>
+                      </>
+                    ) : isPass ? (
+                      <>
+                        <CheckIcon className="w-3.5 h-3.5 stroke-[3]" />
+                        <span>達標</span>
+                      </>
+                    ) : (
+                      <>
+                        <AlertCircleIcon className="w-3.5 h-3.5 stroke-[3]" />
+                        <span>需留意</span>
+                      </>
+                    )}
                   </div>
                 </div>
               );
@@ -361,8 +348,12 @@ const ResultsScreen: React.FC = () => {
               {(Object.keys(DOMAIN_NAMES) as DomainKey[]).map((key) => {
                 const score = domainScores[key];
                 const domainData = ageData.data?.[key];
-                const maxScore = domainData?.maxScore || '-';
+                const maxScore = domainData?.maxScore || 0;
                 const cutoff = domainData?.cutoff || '-';
+                
+                // 🚀 關鍵修正：匯出報告中若滿分為 0，同樣隱藏該列
+                if (maxScore === 0) return null;
+
                 const status = domainStatuses[key];
                 const isPass = status === 'pass' || status === 'max';
                 
