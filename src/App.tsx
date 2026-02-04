@@ -1,4 +1,4 @@
-import React, { useState } from 'react'; // ✅ 修正1: 加入 React 解決 TS2686 錯誤
+import { useState } from 'react'; // ✅ 修正1: 加入 React 解決 TS2686 錯誤
 import { AssessmentProvider, useAssessment } from './context/AssessmentContext';
 import AssessmentScreen from './components/AssessmentScreen';
 import ResultsScreen from './components/ResultsScreen';
