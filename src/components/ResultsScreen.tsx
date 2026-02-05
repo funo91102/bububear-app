@@ -7,13 +7,8 @@ import { CheckIcon, AlertCircleIcon, RefreshIcon, HeartIcon, DownloadIcon, Steth
 import type { DomainKey, AgeGroupKey } from '../types';
 import html2canvas from 'html2canvas';
 
-// 定義 4 個面向的中文章節名稱 (確保分開顯示)
-const DOMAIN_NAMES: Record<DomainKey, string> = {
-  gross_motor: '粗大動作',
-  fine_motor: '精細動作',
-  cognitive_language: '認知語言', // 分開顯示
-  social: '社會發展',           // 分開顯示
-};
+// 定義面向的預設順序與 fallback 名稱
+const DOMAIN_KEYS: DomainKey[] = ['gross_motor', 'fine_motor', 'cognitive_language', 'social'];
 
 const ResultsScreen: React.FC = () => {
   const { assessmentResult, childProfile, feedback, setScreen, resetAssessment, answers } = useAssessment();
@@ -52,24 +47,24 @@ const ResultsScreen: React.FC = () => {
     };
   }, [childProfile]);
 
-  // ✨ SSOT: 統一處理所有面向邏輯 (確保認知與社會分開)
+  // ✨ SSOT: 統一處理所有面向邏輯
+  // 透過 maxScore 自動判斷是否顯示該面向 (完美處理 6-9m 合併顯示 vs 其他年齡層分開顯示)
   const resolvedDomains = useMemo(() => {
     if (!ageData.key) return [];
     
     const currentAgeKey = ageData.key as AgeGroupKey;
 
-    // 遍歷所有定義的面向 (含 social)
-    return (Object.keys(DOMAIN_NAMES) as DomainKey[]).map(key => {
+    return DOMAIN_KEYS.map(key => {
       // 安全獲取該年齡層的該面向資料
       const domainData = screeningData[currentAgeKey]?.[key];
       
-      // 若該年齡層無此面向資料 (例如某些舊版資料)，則跳過
+      // 若該年齡層無此面向資料，則跳過
       if (!domainData) return null;
 
       // 動態計算滿分
       const maxScore = getDomainMaxScore(currentAgeKey, key);
       
-      // 若滿分為 0 (代表該面向在此年齡層不適用或無題目)，則跳過
+      // ✅ 關鍵邏輯：若滿分為 0 (如 6-9m 的 social)，代表此面向已合併或不存在，不顯示在結果頁
       if (maxScore === 0) return null;
 
       const questions = domainData.questions || [];
@@ -81,7 +76,8 @@ const ResultsScreen: React.FC = () => {
 
       return {
         key,
-        name: DOMAIN_NAMES[key], // 使用標準名稱 (認知語言 / 社會發展)
+        // ✅ 優化：優先使用資料層定義的名稱 (如 '認知語言社會')，讓標題更準確
+        name: domainData.name, 
         score: domainScores[key] || 0,
         maxScore,
         cutoff: domainData.cutoff,

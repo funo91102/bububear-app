@@ -8,30 +8,36 @@ export interface AgeCalculationResult {
   isCorrected: boolean;
 }
 
+// 定義常數，避免 Magic Number
+const DAY_MS = 1000 * 60 * 60 * 24;
+
 /**
  * 原生 JS 計算月數差異 (取代 date-fns differenceInMonths)
+ * 邏輯：計算「足月」數。
  */
-const getMonthsDiff = (d1: Date, d2: Date) => {
-  let months = (d1.getFullYear() - d2.getFullYear()) * 12;
-  months -= d2.getMonth();
-  months += d1.getMonth();
+const getMonthsDiff = (target: Date, birth: Date) => {
+  let months = (target.getFullYear() - birth.getFullYear()) * 12;
+  months -= birth.getMonth();
+  months += target.getMonth();
   // 如果日期還沒到 (例如 15號 vs 20號)，月數減一
-  if (d1.getDate() < d2.getDate()) {
+  if (target.getDate() < birth.getDate()) {
     months--;
   }
   return months <= 0 ? 0 : months;
 };
 
 /**
- * 原生 JS 計算天數差異 (取代 date-fns differenceInDays)
+ * 原生 JS 計算天數差異
+ * ✅ 優化：移除 Math.abs，避免掩蓋「未來日期」的錯誤輸入
  */
-const getDaysDiff = (d1: Date, d2: Date) => {
-  const diffTime = Math.abs(d1.getTime() - d2.getTime());
-  return Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+const getDaysDiff = (target: Date, birth: Date) => {
+  const diffTime = target.getTime() - birth.getTime();
+  // 若出生日期在未來 (diffTime < 0)，回傳 0，不計算負數
+  return diffTime <= 0 ? 0 : Math.floor(diffTime / DAY_MS); 
 };
 
 /**
- * 原生 JS 加天數 (取代 date-fns addDays)
+ * 原生 JS 加天數
  */
 const addDaysToDate = (date: Date, days: number) => {
   const result = new Date(date);
@@ -47,15 +53,18 @@ export const calculateAge = (
   const birthDate = new Date(birthDateString);
   const isPremature = gestationalWeeks < 37;
 
-  // 1. 計算生理年齡的月數
+  // 1. 計算生理年齡的月數 (用於判斷是否需要矯正)
   const chronoMonths = getMonthsDiff(targetDate, birthDate);
   
-  // 2. 決定是否使用矯正年齡
+  // ✅ 優化 1: 提取業務邏輯變數，提升可讀性
+  // 早產且生理年齡小於 24 個月 (2歲) 需進行矯正
+  const needsCorrection = isPremature && chronoMonths < 24;
+
+  // 2. 決定計算基準日
   let calculationDate = birthDate;
   let isCorrected = false;
 
-  // 早產且小於 24 個月 (2歲) 需進行矯正
-  if (isPremature && chronoMonths < 24) {
+  if (needsCorrection) {
     const weeksToCorrect = 40 - gestationalWeeks;
     calculationDate = addDaysToDate(birthDate, weeksToCorrect * 7);
     isCorrected = true;
@@ -68,13 +77,20 @@ export const calculateAge = (
   // 計算顯示用的歲與月
   const years = Math.floor(totalMonths / 12);
   const months = totalMonths % 12;
-  // 剩餘天數估算 (僅用於顯示，不需要非常精確)
+  // 剩餘天數估算 (僅用於顯示 UI)
   const days = totalDays % 30; 
 
+  // 組裝顯示字串
   let exactAge = '';
-  if (years > 0) exactAge += `${years}歲`;
-  if (months > 0) exactAge += ` ${months}個月`;
-  if (years === 0 && months === 0) exactAge += ` ${days}天`;
+  if (years > 0) {
+    exactAge += `${years}歲`;
+    if (months > 0) exactAge += ` ${months}個月`;
+  } else {
+    // 不滿 1 歲
+    if (months > 0) exactAge += `${months}個月`;
+    if (months === 0 || days > 0) exactAge += ` ${days}天`;
+  }
+  
   if (isCorrected) exactAge += ' (矯正)';
 
   // 4. 判斷 AgeGroupKey
@@ -91,7 +107,6 @@ export const calculateAge = (
     ageGroupKey = '12-15m';
     ageGroupDisplay = '12個月 - 15個月';
   } else if (totalMonths >= 15 && totalMonths < 18) {
-    // ✅ 15-18個月判斷區塊 (已確認邏輯正確)
     ageGroupKey = '15-18m';
     ageGroupDisplay = '15個月 - 18個月';
   } else if (totalMonths >= 18 && totalMonths < 24) {
@@ -112,7 +127,7 @@ export const calculateAge = (
   }
 
   return {
-    exactAge,
+    exactAge: exactAge.trim(),
     ageGroupDisplay,
     ageGroupKey,
     isPremature,

@@ -17,16 +17,14 @@ export const isAgeGroupImplemented = (ageKey: AgeGroupKey | undefined | null): b
   
   const data = screeningData[ageKey];
   // 安全檢查：確認資料存在，且粗大動作有題目
-  const hasQuestions = (data?.gross_motor?.questions?.length ?? 0) > 0;
-  
-  return hasQuestions;
+  return (data?.gross_motor?.questions?.length ?? 0) > 0;
 };
 
 /**
  * 自動取得所有「已開放」的年齡層列表
- * 用途：顯示在「建置中」頁面，告訴使用者哪些可以測
+ * ✅ 優化 1: 回傳型別精確化為 AgeGroupKey[]
  */
-export const getImplementedAgeGroups = (): string[] => {
+export const getImplementedAgeGroups = (): AgeGroupKey[] => {
   const allKeys = Object.keys(screeningData) as AgeGroupKey[];
   return allKeys.filter(isAgeGroupImplemented);
 };
@@ -36,7 +34,7 @@ export const getImplementedAgeGroups = (): string[] => {
 // =========================================================================
 
 /**
- * ✅ [關鍵修復] 動態計算特定領域的滿分
+ * 動態計算特定領域的滿分
  * 因為資料庫移除了 maxScore 欄位，現在必須依據題目權重動態計算
  */
 export const getDomainMaxScore = (ageGroup: AgeGroupKey, domainKey: DomainKey): number => {
@@ -47,15 +45,20 @@ export const getDomainMaxScore = (ageGroup: AgeGroupKey, domainKey: DomainKey): 
   return domainData.questions.reduce((total, q) => total + (q.weight || 1), 0);
 };
 
+// ✅ 優化 2: 集中定義「通過值集合」，提升維護性與效能
+const PASSING_VALUES = new Set<RawAnswerValue>([
+  'pass', 
+  'max', 
+  true, 
+  1, 
+  '1'
+]);
+
 /**
  * 統一判斷單題是否通過
- * 支援: 'pass', 'max', true, 1, '1'
  */
 export const isPassingAnswer = (answer: RawAnswerValue): boolean => {
-  if (answer === 'pass' || answer === 'max') return true;
-  if (answer === true) return true;
-  if (answer === 1 || answer === '1') return true;
-  return false;
+  return PASSING_VALUES.has(answer);
 };
 
 /**
@@ -68,7 +71,7 @@ export const calculateAssessmentResult = (
 ): AssessmentResult => {
   const ageData = screeningData[ageGroupKey];
   
-  // 初始化結果容器
+  // 初始化預設結果容器 (Fail-safe defaults)
   const domainScores: Record<DomainKey, number> = {
     gross_motor: 0,
     fine_motor: 0,
@@ -77,11 +80,23 @@ export const calculateAssessmentResult = (
   };
 
   const domainStatuses: Record<DomainKey, AssessmentStatus> = {
-    gross_motor: 'fail',
-    fine_motor: 'fail',
-    cognitive_language: 'fail',
-    social: 'fail'
+    gross_motor: 'pass',
+    fine_motor: 'pass',
+    cognitive_language: 'pass',
+    social: 'pass'
   };
+
+  // ✅ 優化 3: 資料防呆 (Guard Clause)
+  // 若該年齡層資料不存在，直接回傳安全預設值，避免程式崩潰
+  if (!ageData) {
+    console.error(`[ScreeningEngine] Critical: Missing data for age group ${ageGroupKey}`);
+    return {
+      domainScores,
+      domainStatuses,
+      overallStatus: 'normal',
+      totalScore: 0
+    };
+  }
 
   let totalScore = 0;
   let failCount = 0;
@@ -91,7 +106,17 @@ export const calculateAssessmentResult = (
 
   domains.forEach(domainKey => {
     const domain = ageData[domainKey];
-    if (!domain) return; // 防呆
+    if (!domain) return; // 單一領域防呆
+
+    // [關鍵邏輯]：先確認該面向是否有題目 (滿分是否 > 0)
+    // 對於 6-9m 的 'social' (空殼)，maxScore 會是 0
+    const maxScore = getDomainMaxScore(ageGroupKey, domainKey);
+
+    if (maxScore === 0) {
+      // 若滿分為 0，代表此年齡層無此面向 (或已合併)，直接跳過計算
+      // 狀態維持預設的 'pass'，且不計入 failCount
+      return; 
+    }
 
     let currentScore = 0;
     
@@ -110,11 +135,10 @@ export const calculateAssessmentResult = (
     // 若得分 >= 切截點 (Cutoff)，則通過
     if (currentScore >= domain.cutoff) {
       // 進一步判斷是否滿分 (顯示星星或MAX)
-      const maxScore = getDomainMaxScore(ageGroupKey, domainKey);
       domainStatuses[domainKey] = (currentScore === maxScore) ? 'max' : 'pass';
     } else {
       domainStatuses[domainKey] = 'fail';
-      failCount++;
+      failCount++; // 只有真正存在的面向未達標，才計入失敗
     }
   });
 

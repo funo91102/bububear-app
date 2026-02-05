@@ -66,7 +66,7 @@ const tools2to3y: ToolItem[] = [
   { title: '球', desc: '1顆，網球大小，測試丟球與跳躍。' },
 ];
 
-// 5. 學齡前組 (3歲 - 4歲 / 量表七) - ✅ 已修正
+// 5. 學齡前組 (3歲 - 4歲 / 量表七)
 // 適用：3-4y
 const tools3to4y: ToolItem[] = [
   { 
@@ -81,7 +81,7 @@ const tools3to4y: ToolItem[] = [
   { title: '筆與白紙', desc: '測試模仿畫圓形。' },
 ];
 
-// 6. 學齡前組 (4歲 - 5歲 / 量表八) - ✅ 已修正
+// 6. 學齡前組 (4歲 - 5歲 / 量表八)
 // 適用：4-5y
 const tools4to5y: ToolItem[] = [
   { 
@@ -100,12 +100,18 @@ const tools4to5y: ToolItem[] = [
   { title: '筆與白紙', desc: '一張畫有直線(剪紙用)，一張空白(畫圖用)。' },
 ];
 
-// 7. 大童組 (5歲以上 / 量表九)
-// 適用：5-7y (目前預留，若有需要可細分)
+// 7. 大童組 (5歲 - 7歲 / 量表九) - ✅ 已細化
+// 適用：5-7y
 const tools5to7y: ToolItem[] = [
-  { title: '圖卡 4-10', desc: '包含形狀、故事、數字等測試。', badge: 'App 內建' },
-  { title: '10元硬幣', desc: '3 枚，測試掌內操作。' },
-  { title: '筆與白紙', desc: '測試運筆與抄畫。' },
+  { 
+    title: '圖卡 4-9 (綜合測試)', 
+    desc: '包含形狀、故事因果、數字指認。', 
+    image: '/assets/card9_numbers.png', // 使用數字卡作為代表
+    badge: 'App 內建' 
+  },
+  { title: '10元硬幣', desc: '3 枚，測試單手掌內操作 (推幣)。' },
+  { title: '筆與白紙', desc: '測試前三指握筆與圖形抄畫。' },
+  { title: '外套 (有拉鍊)', desc: '1 件，測試自行拉拉鍊。' },
 ];
 
 const ToolPreparationScreen: React.FC = () => {
@@ -140,13 +146,13 @@ const ToolPreparationScreen: React.FC = () => {
     // 4. 幼兒期
     if (ageGroupKey === '2-3y') return tools2to3y;
 
-    // 5. 學齡前 (3-4歲) - ✅ 新增分流
+    // 5. 學齡前 (3-4歲)
     if (ageGroupKey === '3-4y') return tools3to4y;
 
-    // 6. 學齡前 (4-5歲) - ✅ 新增分流
+    // 6. 學齡前 (4-5歲)
     if (ageGroupKey === '4-5y') return tools4to5y;
 
-    // 7. 大童 (5歲以上)
+    // 7. 大童 (5歲以上) - ✅ 新增分流
     if (ageGroupKey === '5-7y') return tools5to7y;
 
     // 預設 fallback

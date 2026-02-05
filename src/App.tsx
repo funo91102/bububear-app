@@ -1,27 +1,50 @@
-import { useState } from 'react'; // ✅ 修正 1: 移除未使用的 React，解決 Vercel TS6133 錯誤
+import React, { useState, useEffect } from 'react'; // ✅ 修正: 補回 React 以解決 UMD Global 錯誤
 import { AssessmentProvider, useAssessment } from './context/AssessmentContext';
 import AssessmentScreen from './components/AssessmentScreen';
 import ResultsScreen from './components/ResultsScreen';
 import ToolPreparationScreen from './components/ToolPreparationScreen';
 import FeedbackScreen from './components/FeedbackScreen'; 
 import { calculateAge } from './utils/ageCalculator';
-import { PlayIcon, ChevronLeftIcon } from './components/Icons';
+import { PlayIcon, ChevronLeftIcon, AlertCircleIcon } from './components/Icons';
+import type { AgeGroupKey } from './types'; 
 import './index.css';
 
-// ✅ 修正 2: 加入 '4-5y' 與 '3-4y'，確保這兩個年齡層的家長能順利開始測驗
-const supportedAgeGroups = [
+// 強制型別定義，避免 Typo 且與系統型別同步
+const supportedAgeGroups: AgeGroupKey[] = [
   '6-9m', '9-12m', '12-15m', '15-18m', '18-24m', 
-  '2-3y', '3-4y', '4-5y'
+  '2-3y', '3-4y', '4-5y', '5-7y'
 ];
+
+// --- 輔助函式：驗證邏輯 ---
+const validateProfileData = (
+  nickname: string, 
+  birthDate: string, 
+  isPremature: boolean, 
+  gestationalWeeks: string
+): string | null => {
+  if (!birthDate) return '請輸入孩子的生日，才能計算準確的年齡喔！';
+  if (!nickname.trim()) return '請幫寶寶取個暱稱吧！';
+
+  if (isPremature) {
+    const weeks = parseInt(gestationalWeeks);
+    if (isNaN(weeks) || weeks < 20) {
+      return '請輸入有效的妊娠週數 (需大於 20 週)';
+    }
+  }
+  return null;
+};
 
 // --- 內部元件 1: 確認資訊頁面 ---
 const ConfirmationScreen = () => {
   const { childProfile, setScreen } = useAssessment();
   
-  if (!childProfile) {
-    setScreen('welcome');
-    return null;
-  }
+  useEffect(() => {
+    if (!childProfile) {
+      setScreen('welcome');
+    }
+  }, [childProfile, setScreen]);
+
+  if (!childProfile) return null;
 
   const { exactAge, ageGroupDisplay, ageGroupKey } = calculateAge(
     childProfile.birthDate, 
@@ -29,7 +52,7 @@ const ConfirmationScreen = () => {
     childProfile.gestationalAge
   );
 
-  const isSupported = ageGroupKey && supportedAgeGroups.includes(ageGroupKey);
+  const isSupported = ageGroupKey && supportedAgeGroups.includes(ageGroupKey as AgeGroupKey);
 
   return (
     <div className="min-h-screen bg-sky-50 flex flex-col items-center justify-center p-6 relative overflow-hidden">
@@ -73,7 +96,7 @@ const ConfirmationScreen = () => {
                  ) : (
                    <div className="text-amber-600/80 flex flex-col items-center">
                      <span>🚧 此階段題庫建置中</span>
-                     <span className="font-normal opacity-80 mt-1">目前已開放：6m - 5y 完整量表</span>
+                     <span className="font-normal opacity-80 mt-1">目前已開放：6m - 7y 完整量表</span>
                    </div>
                  )}
                </div>
@@ -110,25 +133,25 @@ const WelcomeScreen = () => {
   
   const [isPremature, setIsPremature] = useState(false);
   const [gestationalWeeks, setGestationalWeeks] = useState('');
+  
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const handleStart = () => {
-    if (!birthDate) {
-      alert('請輸入孩子的生日，才能計算準確的年齡喔！');
-      return;
-    }
-    if (!nickname) {
-       alert('請幫寶寶取個暱稱吧！');
-       return;
+    // 1. 執行驗證
+    const error = validateProfileData(nickname, birthDate, isPremature, gestationalWeeks);
+    
+    if (error) {
+      setErrorMsg(error);
+      return; 
     }
 
+    // 2. 清除錯誤
+    setErrorMsg(null);
+
+    // 3. 計算最終週數
     let finalGestationalAge = 40; 
-    
     if (isPremature) {
       const weeks = parseInt(gestationalWeeks);
-      if (!weeks || weeks < 20) {
-        alert('請輸入有效的妊娠週數 (需大於 20 週)');
-        return;
-      }
       if (weeks >= 37) {
         finalGestationalAge = 40; 
       } else {
@@ -136,6 +159,7 @@ const WelcomeScreen = () => {
       }
     }
     
+    // 4. 設定資料並跳轉
     setChildProfile({
       nickname: nickname,
       birthDate: birthDate,
@@ -166,7 +190,7 @@ const WelcomeScreen = () => {
           <div>
             <label className="block text-sm font-bold text-slate-600 mb-1 ml-1">寶貝的暱稱</label>
             <input 
-              type="text" value={nickname} onChange={(e) => setNickname(e.target.value)}
+              type="text" value={nickname} onChange={(e) => { setNickname(e.target.value); setErrorMsg(null); }}
               placeholder="例如：小胖"
               className="w-full px-4 py-3 rounded-xl bg-slate-100 border-2 border-slate-200 focus:border-emerald-400 focus:bg-white transition-all outline-none font-bold text-slate-700 placeholder:font-normal placeholder:text-slate-400"
             />
@@ -175,7 +199,7 @@ const WelcomeScreen = () => {
           <div>
             <label className="block text-sm font-bold text-slate-600 mb-1 ml-1">出生日期</label>
             <input 
-              type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)}
+              type="date" value={birthDate} onChange={(e) => { setBirthDate(e.target.value); setErrorMsg(null); }}
               className="w-full px-4 py-3 rounded-xl bg-slate-100 border-2 border-slate-200 focus:border-emerald-400 focus:bg-white transition-all outline-none font-bold text-slate-700"
             />
           </div>
@@ -197,10 +221,18 @@ const WelcomeScreen = () => {
             <div className="animate-in slide-in-from-top-2 duration-300">
               <label className="block text-sm font-bold text-slate-600 mb-1 ml-1">出生時的妊娠週數</label>
               <input 
-                type="number" value={gestationalWeeks} onChange={(e) => setGestationalWeeks(e.target.value)}
+                type="number" value={gestationalWeeks} onChange={(e) => { setGestationalWeeks(e.target.value); setErrorMsg(null); }}
                 placeholder="例如：32" min="20" 
                 className="w-full px-4 py-3 rounded-xl bg-slate-100 border-2 border-slate-200 focus:border-emerald-400 focus:bg-white transition-all outline-none font-bold text-slate-700 placeholder:font-normal"
               />
+            </div>
+          )}
+
+          {/* Error Message Display */}
+          {errorMsg && (
+            <div className="flex items-center gap-2 text-rose-500 bg-rose-50 px-4 py-3 rounded-xl text-sm font-bold animate-pulse">
+              <AlertCircleIcon className="w-4 h-4" />
+              {errorMsg}
             </div>
           )}
 
