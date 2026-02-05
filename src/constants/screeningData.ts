@@ -1,11 +1,10 @@
 import type { ScreeningData, AgeGroupData, Domain, DomainKey } from '../types';
 
-// --- 輔助函式：產生空資料 (用於尚未建置的層級或佔位) ---
+// --- 輔助函式：產生空資料 ---
 const createEmptyDomain = (name: string, key: DomainKey): Domain => ({
   name,
   key,
   cutoff: 0,
-  // maxScore 已移除，由引擎動態計算
   questions: [],
 });
 
@@ -91,7 +90,6 @@ export const screeningData: ScreeningData = {
         },
       ]
     },
-    // ✅ 修正區塊：認知語言社會 (滿分調整為 5)
     cognitive_language: {
       name: '認知語言社會', key: 'cognitive_language', cutoff: 4,
       questions: [
@@ -102,7 +100,7 @@ export const screeningData: ScreeningData = {
           emoji: '👂', kind: 'emoji' 
         },
         { 
-          id: 'CL-6-9m-Q2', type: '實', weight: 1, // ✅ 修正：權重改為 1 (此題雖有星號，但在此年齡層量表中配分為 1)
+          id: 'CL-6-9m-Q2', type: '實', weight: 1, 
           text: '★ 拿玩具在面前搖晃並跨過中線移動，眼球會追視？', 
           description: '將玩具從一邊跨過身體中線移動到另一側，孩子眼球會追視也會伸手拿。', 
           emoji: '🧶', kind: 'emoji' 
@@ -117,7 +115,6 @@ export const screeningData: ScreeningData = {
         },
       ]
     },
-    // social 維持空殼，由系統自動隱藏
     social: createEmptyDomain('社會發展', 'social'), 
   },
 
@@ -907,7 +904,7 @@ export const screeningData: ScreeningData = {
   },
 
   // ==========================================
-  // 9. 5-7 歲 (量表九) - ✅ 新增完整題庫
+  // 9. 5-7 歲 (量表九)
   // ==========================================
   '5-7y': {
     gross_motor: {
@@ -952,7 +949,7 @@ export const screeningData: ScreeningData = {
         {
           id: 'FM-5-7y-Q3', type: '實', weight: 1,
           text: '能單手將手掌中三枚十元硬幣用拇指推至指尖？',
-          description: '【需準備 3 枚 10 元硬幣】手握三枚硬幣，運用拇指將硬幣一枚一枚推出至指尖放置桌上。', // ✅ 修正: toolTip 內容併入 description
+          description: '【需準備 3 枚 10 元硬幣】手握三枚硬幣，運用拇指將硬幣一枚一枚推出至指尖放置桌上。',
           emoji: '🪙', kind: 'emoji'
         },
         {

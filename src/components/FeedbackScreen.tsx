@@ -1,79 +1,9 @@
 import React, { useState } from 'react';
 import { useAssessment } from '../context/AssessmentContext';
 import { CheckIcon } from './Icons'; 
-import { screeningData } from '../constants/screeningData'; 
 import { calculateAge } from '../utils/ageCalculator'; 
-// 修正 1: 移除未使用的 DomainKey
-import type { Answers, AssessmentResult } from '../types';
-
-// --- 純函數：計算分數邏輯 ---
-const calculateResults = (
-  answers: Answers, 
-  ageGroupKey: string
-): AssessmentResult | null => {
-  // 1. 取得該年齡層的題庫
-  // 使用 as keyof 確保 TS 知道這是有效的索引
-  const currentData = screeningData[ageGroupKey as keyof typeof screeningData];
-  
-  if (!currentData) return null;
-
-  const result: AssessmentResult = {
-    domainScores: {
-      gross_motor: 0,
-      fine_motor: 0,
-      cognitive_language: 0,
-      social: 0
-    },
-    domainStatuses: {
-      gross_motor: 'fail',
-      fine_motor: 'fail',
-      cognitive_language: 'fail',
-      social: 'fail'
-    },
-    overallStatus: 'normal'
-  };
-
-  let failCount = 0;
-
-  // 2. 遍歷四個領域進行計分
-  (['gross_motor', 'fine_motor', 'cognitive_language', 'social'] as const).forEach((domain) => {
-    const domainData = currentData[domain];
-    const questions = domainData.questions;
-    
-    let score = 0;
-    questions.forEach(q => {
-      // ⚠️ 關鍵邏輯：
-      // 只有 'pass' 才得分。
-      // 'fail', 'refused', 'unanswered', 'doctor_assessment' 均為 0 分
-      if (answers[q.id] === 'pass') {
-        score += q.weight;
-      }
-    });
-
-    result.domainScores[domain] = score;
-
-    // 3. 判斷該領域是否達標
-    if (score === domainData.maxScore) {
-      result.domainStatuses[domain] = 'max';
-    } else if (score >= domainData.cutoff) {
-      result.domainStatuses[domain] = 'pass';
-    } else {
-      result.domainStatuses[domain] = 'fail';
-      failCount++;
-    }
-  });
-
-  // 4. 判斷總體結果
-  if (failCount >= 2) {
-    result.overallStatus = 'referral';  // 需轉介 (2個以上領域未達標)
-  } else if (failCount === 1) {
-    result.overallStatus = 'follow_up'; // 需追蹤 (1個領域未達標)
-  } else {
-    result.overallStatus = 'normal';    // 發展正常
-  }
-
-  return result;
-};
+// ✅ 修正 1: 引入核心計分引擎
+import { calculateAssessmentResult } from '../utils/screeningEngine';
 
 const FeedbackScreen: React.FC = () => {
   const { 
@@ -86,39 +16,58 @@ const FeedbackScreen: React.FC = () => {
   
   const [anxietyScore, setAnxietyScore] = useState(5);
   const [notes, setNotes] = useState('');
+  // ✅ 建議 3: 新增處理中狀態，防止連點
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = () => {
-    // 1. 儲存家長回饋
-    setFeedback({
-      anxietyScore,
-      notes
-    });
+  const handleSubmit = async () => {
+    // 防止重複提交
+    if (isSubmitting) return;
+    
+    // 1. 基礎防呆 (Guard Clause)
+    if (!childProfile) {
+      console.error("錯誤：找不到兒童資料");
+      return;
+    }
 
-    // 2. 執行計分 (含防呆檢查)
-    if (childProfile) {
+    setIsSubmitting(true);
+
+    try {
+      // 2. 儲存家長回饋
+      setFeedback({
+        anxietyScore,
+        notes
+      });
+
+      // ✅ 建議 2: 集中時間基準點 (方便未來測試或重播)
+      const now = new Date();
+
       const { ageGroupKey } = calculateAge(
         childProfile.birthDate, 
-        new Date(), 
+        now, 
         childProfile.gestationalAge
       );
 
-      // 修正 2: 嚴格檢查 ageGroupKey 是否存在
-      if (ageGroupKey) {
-        const results = calculateResults(answers, ageGroupKey);
-
-        if (results) {
-          setAssessmentResult(results); 
-          // 修正 3: 只有計算成功才跳轉，避免空白結果頁
-          setScreen('results'); 
-        } else {
-          console.error("計算失敗：無法取得該年齡層資料");
-          // 可以在這裡加入一個簡單的 alert 或錯誤提示
-          alert("系統錯誤：無法計算結果，請重新操作");
-        }
-      } else {
+      // ✅ 建議 1: 使用 Guard Clause 降低巢狀層級
+      if (!ageGroupKey) {
         console.error("錯誤：無效的年齡層 Key");
-        alert("資料異常：無法判定年齡層");
+        alert("無法判定適用年齡層，請檢查生日資料。");
+        setIsSubmitting(false); // 發生錯誤要解鎖按鈕
+        return;
       }
+
+      // 3. 執行核心計算
+      // 這裡可以視情況加入微小的 delay 讓使用者感覺到「分析中」(非必要，但有助於轉場體驗)
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      const results = calculateAssessmentResult(ageGroupKey, answers);
+      
+      setAssessmentResult(results); 
+      setScreen('results'); 
+      
+    } catch (error) {
+      console.error("計分引擎錯誤:", error);
+      alert("系統發生錯誤，無法計算結果，請稍後再試。");
+      setIsSubmitting(false); // 發生錯誤要解鎖按鈕
     }
   };
 
@@ -156,7 +105,8 @@ const FeedbackScreen: React.FC = () => {
                 step="1"
                 value={anxietyScore} 
                 onChange={(e) => setAnxietyScore(Number(e.target.value))}
-                className="w-full h-4 bg-slate-200 rounded-full appearance-none cursor-pointer accent-sky-500 hover:accent-sky-400 transition-all focus:outline-none focus:ring-4 focus:ring-sky-100"
+                disabled={isSubmitting} // 提交中禁止修改
+                className="w-full h-4 bg-slate-200 rounded-full appearance-none cursor-pointer accent-sky-500 hover:accent-sky-400 transition-all focus:outline-none focus:ring-4 focus:ring-sky-100 disabled:opacity-50 disabled:cursor-not-allowed"
               />
               <span className="text-2xl">😰</span>
             </div>
@@ -173,8 +123,9 @@ const FeedbackScreen: React.FC = () => {
             <textarea 
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
+              disabled={isSubmitting} // 提交中禁止修改
               placeholder="例如：寶寶今天比較累、某一題其實好像會一點..."
-              className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl text-slate-700 placeholder-slate-400 focus:border-sky-400 focus:ring-4 focus:ring-sky-50 focus:outline-none transition-all h-32 resize-none leading-relaxed text-sm font-medium"
+              className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl text-slate-700 placeholder-slate-400 focus:border-sky-400 focus:ring-4 focus:ring-sky-50 focus:outline-none transition-all h-32 resize-none leading-relaxed text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </div>
         </div>
@@ -182,10 +133,21 @@ const FeedbackScreen: React.FC = () => {
         <div className="p-6 bg-slate-50/50 border-t border-slate-100">
           <button 
             onClick={handleSubmit}
-            className="w-full py-5 rounded-[2rem] bg-sky-500 hover:bg-sky-600 text-white shadow-xl shadow-sky-200 active:scale-95 transition-all flex items-center justify-center gap-3 group"
+            disabled={isSubmitting}
+            className={`w-full py-5 rounded-[2rem] text-white shadow-xl shadow-sky-200 active:scale-95 transition-all flex items-center justify-center gap-3 group ${
+              isSubmitting 
+                ? 'bg-slate-400 cursor-not-allowed' 
+                : 'bg-sky-500 hover:bg-sky-600'
+            }`}
           >
-            <span className="font-black text-xl tracking-wider">查看分析結果</span>
-            <CheckIcon className="w-6 h-6 stroke-[3] group-hover:scale-110 transition-transform" />
+            {isSubmitting ? (
+              <span className="font-bold text-xl tracking-wider animate-pulse">分析中...</span>
+            ) : (
+              <>
+                <span className="font-black text-xl tracking-wider">查看分析結果</span>
+                <CheckIcon className="w-6 h-6 stroke-[3] group-hover:scale-110 transition-transform" />
+              </>
+            )}
           </button>
         </div>
 
