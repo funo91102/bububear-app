@@ -2,18 +2,17 @@ import React, { useMemo, useRef, useState } from 'react';
 import { useAssessment } from '../context/AssessmentContext';
 import { calculateAge } from '../utils/ageCalculator';
 import { screeningData } from '../constants/screeningData';
-// ✅ 修正 1: 引入 getDomainMaxScore 用於動態計算滿分
 import { getDomainMaxScore } from '../utils/screeningEngine';
 import { CheckIcon, AlertCircleIcon, RefreshIcon, HeartIcon, DownloadIcon, StethoscopeIcon } from './Icons';
 import type { DomainKey, AgeGroupKey } from '../types';
 import html2canvas from 'html2canvas';
 
-// 定義面向的中文章節名稱
+// 定義 4 個面向的中文章節名稱 (確保分開顯示)
 const DOMAIN_NAMES: Record<DomainKey, string> = {
   gross_motor: '粗大動作',
   fine_motor: '精細動作',
-  cognitive_language: '認知語言',
-  social: '社會發展',
+  cognitive_language: '認知語言', // 分開顯示
+  social: '社會發展',           // 分開顯示
 };
 
 const ResultsScreen: React.FC = () => {
@@ -53,24 +52,27 @@ const ResultsScreen: React.FC = () => {
     };
   }, [childProfile]);
 
-  // ✨ 優化 3: Single Source of Truth (單一真理來源)
-  // 統一處理所有面向的邏輯 (分數、狀態、醫師評估、隱藏)，供 App 與 報告 共用
+  // ✨ SSOT: 統一處理所有面向邏輯 (確保認知與社會分開)
   const resolvedDomains = useMemo(() => {
     if (!ageData.key) return [];
     
-    // 強制型別斷言，確保 key 存在
     const currentAgeKey = ageData.key as AgeGroupKey;
 
+    // 遍歷所有定義的面向 (含 social)
     return (Object.keys(DOMAIN_NAMES) as DomainKey[]).map(key => {
-      const domainData = screeningData[currentAgeKey][key];
+      // 安全獲取該年齡層的該面向資料
+      const domainData = screeningData[currentAgeKey]?.[key];
       
-      // ✅ 修正 2: 使用工具函式動態計算滿分 (因為資料庫已移除 maxScore 欄位)
+      // 若該年齡層無此面向資料 (例如某些舊版資料)，則跳過
+      if (!domainData) return null;
+
+      // 動態計算滿分
       const maxScore = getDomainMaxScore(currentAgeKey, key);
       
-      // 若滿分為 0，回傳 null (後續濾掉)
+      // 若滿分為 0 (代表該面向在此年齡層不適用或無題目)，則跳過
       if (maxScore === 0) return null;
 
-      const questions = domainData.questions;
+      const questions = domainData.questions || [];
       // 檢查是否有「醫師評估」
       const hasDoctorAssessment = questions.some(q => answers[q.id] === 'doctor_assessment');
       
@@ -79,19 +81,19 @@ const ResultsScreen: React.FC = () => {
 
       return {
         key,
-        name: DOMAIN_NAMES[key],
-        score: domainScores[key],
-        maxScore, // 這現在是動態計算出來的正確數值
+        name: DOMAIN_NAMES[key], // 使用標準名稱 (認知語言 / 社會發展)
+        score: domainScores[key] || 0,
+        maxScore,
         cutoff: domainData.cutoff,
         hasDoctorAssessment,
         isPass,
         status
       };
-    }).filter((item): item is NonNullable<typeof item> => item !== null); // 過濾掉 null
+    }).filter((item): item is NonNullable<typeof item> => item !== null);
   }, [ageData.key, answers, domainStatuses, domainScores]);
 
 
-  // 2. 匯出圖片功能 (✨ 優化 2: 增強截圖參數)
+  // 2. 匯出圖片功能
   const handleExportImage = async () => {
     if (!reportRef.current) return;
     setIsExporting(true);
@@ -102,7 +104,6 @@ const ResultsScreen: React.FC = () => {
         scale: 2, 
         backgroundColor: '#ffffff',
         useCORS: true, 
-        // 關鍵參數：確保在手機上也能截出完整的電腦版寬度報告
         windowWidth: reportRef.current.scrollWidth,
         windowHeight: reportRef.current.scrollHeight
       });
@@ -120,14 +121,14 @@ const ResultsScreen: React.FC = () => {
     }
   };
 
-  // 3. 定義支持性訊息邏輯 (✨ 優化 1: 明確定義樣式，避免字串替換風險)
+  // 3. 支持性訊息主題
   const supportTheme = useMemo(() => {
     switch (overallStatus) {
       case 'referral': 
         return {
           bg: 'bg-rose-50', 
-          bgStrong: 'bg-rose-100', // 明確定義深色背景
-          border: 'border-rose-100', // 明確定義邊框色
+          bgStrong: 'bg-rose-100',
+          border: 'border-rose-100',
           text: 'text-rose-800',
           icon: '💪', bearEmoji: '🐻‍⚕️',
           title: '讓我們一起多留意寶寶的進度',
@@ -207,7 +208,6 @@ const ResultsScreen: React.FC = () => {
             <p className="text-slate-600 text-sm font-medium leading-relaxed opacity-90">{supportTheme.description}</p>
           </div>
           <div className="p-6 bg-white">
-            {/* 使用明確的 class name，不再使用 replace */}
             <div className={`rounded-xl p-5 border-l-4 ${supportTheme.bgStrong} ${supportTheme.border.replace('border-', 'border-l-')}`}>
               <h3 className={`text-sm font-black mb-2 flex items-center gap-2 ${supportTheme.text}`}>
                 <span className="text-lg">{supportTheme.icon}</span>
@@ -218,12 +218,11 @@ const ResultsScreen: React.FC = () => {
           </div>
         </div>
 
-        {/* 評估詳情 (App畫面) - 直接使用 resolvedDomains */}
+        {/* 評估詳情 (App畫面) */}
         <div className="mt-8 space-y-4">
           <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest ml-2 flex items-center gap-2"><span>📊</span> 各面向評估詳情</h3>
           <div className="grid grid-cols-1 gap-3">
             {resolvedDomains.map((item, index) => {
-              // 樣式邏輯保持不變，但數據來源更乾淨
               let cardStyle = item.isPass ? 'bg-white border-slate-100 shadow-sm' : 'bg-rose-50/50 border-rose-100 shadow-inner';
               if (item.hasDoctorAssessment) cardStyle = 'bg-indigo-50/50 border-indigo-100 shadow-sm';
 
@@ -295,7 +294,6 @@ const ResultsScreen: React.FC = () => {
               <tr className="bg-slate-100"><th className="p-3 text-left border border-slate-300 w-1/3">發展面向</th><th className="p-3 text-center border border-slate-300 w-1/4">得分 / 滿分</th><th className="p-3 text-center border border-slate-300 w-1/4">及格標準</th><th className="p-3 text-center border border-slate-300 w-1/6">狀態</th></tr>
             </thead>
             <tbody>
-              {/* ✨ 這裡也直接使用 resolvedDomains，保證與 App 畫面數據來源完全一致 */}
               {resolvedDomains.map((item) => (
                 <tr key={item.key}>
                   <td className="p-3 border border-slate-300 font-bold text-slate-700">{item.name}</td>
