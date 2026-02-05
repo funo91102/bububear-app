@@ -8,36 +8,53 @@ import type {
   RawAnswerValue
 } from '../types';
 
+// =========================================================================
+// 1. 輔助判定與型別安全
+// =========================================================================
+
 /**
  * 檢查該年齡層是否已建置資料
- * 判斷標準：粗大動作 (gross_motor) 的題目數量是否大於 0
+ * 優化：改為檢查「任一領域是否有題目」，不綁定特定領域，提升擴充性。
  */
 export const isAgeGroupImplemented = (ageKey: AgeGroupKey | undefined | null): boolean => {
   if (!ageKey) return false;
   
   const data = screeningData[ageKey];
-  // 安全檢查：確認資料存在，且粗大動作有題目
-  const hasQuestions = (data?.gross_motor?.questions?.length ?? 0) > 0;
-  
-  return hasQuestions;
+  if (!data) return false;
+
+  // 取得該年齡層所有領域的資料，檢查是否有任何領域包含題目
+  return Object.values(data).some(domain => (domain.questions?.length ?? 0) > 0);
 };
 
 /**
  * 自動取得所有「已開放」的年齡層列表
- * 用途：顯示在「建置中」頁面，告訴使用者哪些可以測
+ * 優化：回傳精確的 AgeGroupKey[] 型別，提升 DX (開發者體驗)。
  */
-export const getImplementedAgeGroups = (): string[] => {
+export const getImplementedAgeGroups = (): AgeGroupKey[] => {
   const allKeys = Object.keys(screeningData) as AgeGroupKey[];
   return allKeys.filter(isAgeGroupImplemented);
 };
 
 // =========================================================================
-// 🚀 核心計分引擎
+// 2. 核心計分邏輯
 // =========================================================================
 
 /**
- * ✅ [關鍵修復] 動態計算特定領域的滿分
- * 因為資料庫移除了 maxScore 欄位，現在必須依據題目權重動態計算
+ * 通過標準的集合 (Declarative Style)
+ * 集中管理所有視為「通過」的值，易於維護。
+ */
+const PASS_VALUES = new Set<RawAnswerValue>(['pass', 'max', true, 1, '1']);
+
+/**
+ * 統一判斷單題是否通過
+ */
+export const isPassingAnswer = (answer: RawAnswerValue): boolean => {
+  return PASS_VALUES.has(answer);
+};
+
+/**
+ * 動態計算特定領域的滿分
+ * 保持 Pure Function，暫不引入 Cache 以維持無狀態的單純性。
  */
 export const getDomainMaxScore = (ageGroup: AgeGroupKey, domainKey: DomainKey): number => {
   const domainData = screeningData[ageGroup]?.[domainKey];
@@ -45,17 +62,6 @@ export const getDomainMaxScore = (ageGroup: AgeGroupKey, domainKey: DomainKey): 
 
   // 加總所有題目的權重 (若無設定 weight，預設為 1)
   return domainData.questions.reduce((total, q) => total + (q.weight || 1), 0);
-};
-
-/**
- * 統一判斷單題是否通過
- * 支援: 'pass', 'max', true, 1, '1'
- */
-export const isPassingAnswer = (answer: RawAnswerValue): boolean => {
-  if (answer === 'pass' || answer === 'max') return true;
-  if (answer === true) return true;
-  if (answer === 1 || answer === '1') return true;
-  return false;
 };
 
 /**
@@ -67,7 +73,7 @@ export const calculateAssessmentResult = (
   answers: Answers
 ): AssessmentResult => {
   const ageData = screeningData[ageGroupKey];
-  
+
   // 初始化結果容器
   const domainScores: Record<DomainKey, number> = {
     gross_motor: 0,
@@ -83,8 +89,20 @@ export const calculateAssessmentResult = (
     social: 'fail'
   };
 
+  // 🛡️ 防呆保護：若 ageData 不存在 (例如 URL 參數被亂改)，回傳安全預設值，避免 Crash
+  if (!ageData) {
+    console.error(`Screening Engine Error: Age group "${ageGroupKey}" data not found.`);
+    return {
+      domainScores,
+      domainStatuses,
+      overallStatus: 'referral', // 預設為異常以引起注意，或可改為 normal 並顯示錯誤提示
+      totalScore: 0
+    };
+  }
+
   let totalScore = 0;
-  let failCount = 0;
+  let failCount = 0;       // 未達 Cutoff 的領域數量
+  let notFullScoreCount = 0; // 達 Cutoff 但未滿分的領域數量
 
   // 遍歷四個領域進行計算
   const domains: DomainKey[] = ['gross_motor', 'fine_motor', 'cognitive_language', 'social'];
@@ -107,26 +125,36 @@ export const calculateAssessmentResult = (
     totalScore += currentScore;
 
     // 2. 判斷該領域狀態
+    const maxScore = getDomainMaxScore(ageGroupKey, domainKey);
+    
     // 若得分 >= 切截點 (Cutoff)，則通過
     if (currentScore >= domain.cutoff) {
-      // 進一步判斷是否滿分 (顯示星星或MAX)
-      const maxScore = getDomainMaxScore(ageGroupKey, domainKey);
-      domainStatuses[domainKey] = (currentScore === maxScore) ? 'max' : 'pass';
+      if (currentScore === maxScore) {
+        domainStatuses[domainKey] = 'max'; // 滿分 (白色區)
+      } else {
+        domainStatuses[domainKey] = 'pass'; // 通過但未滿分 (淺灰色區)
+        notFullScoreCount++;
+      }
     } else {
-      domainStatuses[domainKey] = 'fail';
+      domainStatuses[domainKey] = 'fail'; // 未通過 (深灰色區)
       failCount++;
     }
   });
 
-  // 3. 決定總體狀態 (Overall Status)邏輯
-  let overallStatus: 'normal' | 'follow_up' | 'referral' = 'normal';
+  // 3. 決定總體狀態 (Overall Status) 邏輯
+  // 依據 PDF 評估結果表
+  // - Fail >= 1 -> Referral (需轉介) - 高敏感度篩檢原則
+  // - NotFullScore >= 1 -> Normal (需追蹤)
+  // - All Max -> Great (太棒了)
 
-  if (failCount === 0) {
-    overallStatus = 'normal';
-  } else if (failCount === 1) {
-    overallStatus = 'follow_up'; // 只有一個領域未達標 -> 需追蹤
+  let overallStatus: 'great' | 'normal' | 'referral' = 'great';
+
+  if (failCount > 0) {
+    overallStatus = 'referral';
+  } else if (notFullScoreCount > 0) {
+    overallStatus = 'normal'; 
   } else {
-    overallStatus = 'referral';  // 兩個或以上領域未達標 -> 建議轉介
+    overallStatus = 'great';
   }
 
   return {

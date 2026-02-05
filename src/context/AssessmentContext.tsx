@@ -1,61 +1,68 @@
-import React, { createContext, useContext, useState } from 'react';
-// 修正 1: ReactNode 必須使用 type-only import
-import type { ReactNode } from 'react';
-
-// 導入專案型別
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { 
-  Screen, 
+  AssessmentContextType, 
   ChildProfile, 
   Answers, 
-  AnswerStatus, 
-  Feedback, 
-  AssessmentResult 
+  RawAnswerValue, 
+  ParentFeedback,
+  AssessmentResult,
+  AgeGroupKey
 } from '../types';
-
-interface AssessmentContextType {
-  screen: Screen;
-  setScreen: (screen: Screen) => void;
-  
-  childProfile: ChildProfile | null;
-  setChildProfile: (profile: ChildProfile) => void;
-  
-  answers: Answers;
-  // 統一命名為 setAnswer (符合 AssessmentScreen 的呼叫)
-  setAnswer: (questionId: string, status: AnswerStatus) => void;
-  // (選用) 保留 updateAnswer 作為別名，相容舊程式碼
-  updateAnswer: (questionId: string, status: AnswerStatus) => void;
-
-  feedback: Feedback | null;
-  setFeedback: (feedback: Feedback) => void;
-
-  // 新增：評估結果的狀態與更新函式 (解決結果頁跳回問題)
-  assessmentResult: AssessmentResult | null;
-  setAssessmentResult: (result: AssessmentResult) => void;
-
-  // 新增：當前題號索引 (選用，若希望跨頁面保留進度)
-  currentQuestionIndex: number;
-  setCurrentQuestionIndex: (index: number | ((prev: number) => number)) => void;
-
-  resetAssessment: () => void;
-}
+import { calculateAssessmentResult } from '../utils/screeningEngine';
 
 const AssessmentContext = createContext<AssessmentContextType | undefined>(undefined);
 
-export const AssessmentProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [screen, setScreen] = useState<Screen>('welcome');
+export const AssessmentProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [screen, setScreen] = useState<AssessmentContextType['screen']>('welcome');
   const [childProfile, setChildProfile] = useState<ChildProfile | null>(null);
   const [answers, setAnswers] = useState<Answers>({});
-  const [feedback, setFeedback] = useState<Feedback | null>(null);
-  
-  // 新增結果狀態
+  const [feedback, setFeedback] = useState<ParentFeedback | null>(null);
   const [assessmentResult, setAssessmentResult] = useState<AssessmentResult | null>(null);
-  
-  // 新增題號狀態 (讓 AssessmentScreen 可以讀寫)
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
 
-  // 核心函式：儲存答案
-  const setAnswer = (questionId: string, status: AnswerStatus) => {
-    setAnswers(prev => ({ ...prev, [questionId]: status }));
+  // ✅ 優化 3: 避免隱性覆蓋與不必要的 Re-render
+  // 只有當值真的改變時，才觸發狀態更新
+  const setAnswer = (questionId: string, value: RawAnswerValue) => {
+    setAnswers(prev => {
+      // 若新舊值相同 (Strict Equality)，直接回傳舊物件參照，React 將會跳過 Render
+      if (prev[questionId] === value) return prev;
+      
+      return {
+        ...prev,
+        [questionId]: value
+      };
+    });
+  };
+
+  // ✅ 優化 1 & 2: 醫療級防呆與中繼資料鎖定
+  const calculateResult = (ageGroupKey: AgeGroupKey) => {
+    // 1. 防呆檢查
+    if (!ageGroupKey) {
+      console.error('System Error: calculateResult called without ageGroupKey');
+      return;
+    }
+
+    const answerCount = Object.keys(answers).length;
+    if (answerCount === 0) {
+      console.warn('Warning: calculateResult called with empty answers. This might be a premature calculation.');
+      // 依需求決定是否阻擋，這裡先給予警告，但允許計算 (可能真的全都没填)
+    }
+
+    console.log(`開始計算 ${ageGroupKey} 的評估結果...`);
+    
+    // 2. 核心計算
+    const result = calculateAssessmentResult(ageGroupKey, answers);
+    
+    // 3. 注入 Metadata (版本鎖定)
+    const resultWithMeta: AssessmentResult = {
+      ...result,
+      meta: {
+        calculatedAt: new Date().toISOString(), // 鎖定計算時間
+        ageGroupKey: ageGroupKey,               // 鎖定使用的量表版本
+        answerCount: answerCount                // 記錄當時的答題數量
+      }
+    };
+
+    setAssessmentResult(resultWithMeta);
   };
 
   const resetAssessment = () => {
@@ -63,26 +70,22 @@ export const AssessmentProvider: React.FC<{ children: ReactNode }> = ({ children
     setChildProfile(null);
     setAnswers({});
     setFeedback(null);
-    setAssessmentResult(null); // 重置結果
-    setCurrentQuestionIndex(0); // 重置題號
+    setAssessmentResult(null);
   };
 
   return (
-    <AssessmentContext.Provider value={{ 
-      screen, 
-      setScreen, 
-      childProfile, 
-      setChildProfile, 
-      answers, 
-      setAnswer,               // ✅ 主要使用這個
-      updateAnswer: setAnswer, // ✅ 相容舊名 (指向同一個函式)
+    <AssessmentContext.Provider value={{
+      screen,
+      setScreen,
+      childProfile,
+      setChildProfile,
+      answers,
+      setAnswer,
       feedback,
       setFeedback,
-      assessmentResult,        // ✅ 讓 FeedbackScreen 可以存結果
-      setAssessmentResult,     // ✅ 讓 ResultsScreen 可以讀結果
-      currentQuestionIndex,
-      setCurrentQuestionIndex,
-      resetAssessment 
+      assessmentResult,
+      calculateResult,
+      resetAssessment
     }}>
       {children}
     </AssessmentContext.Provider>
@@ -91,6 +94,8 @@ export const AssessmentProvider: React.FC<{ children: ReactNode }> = ({ children
 
 export const useAssessment = () => {
   const context = useContext(AssessmentContext);
-  if (!context) throw new Error('useAssessment must be used within an AssessmentProvider');
+  if (!context) {
+    throw new Error('useAssessment must be used within an AssessmentProvider');
+  }
   return context;
 };

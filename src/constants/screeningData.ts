@@ -5,7 +5,6 @@ const createEmptyDomain = (name: string, key: DomainKey): Domain => ({
   name,
   key,
   cutoff: 0,
-  // maxScore 已移除，由引擎動態計算
   questions: [],
 });
 
@@ -758,7 +757,141 @@ export const screeningData: ScreeningData = {
       ]
     }
   },
-  
-  '4-5y': createEmptyAgeGroupData(), 
+
+  // ==========================================
+  // 8. 4-5 歲 (量表八)
+  // ==========================================
+  '4-5y': {
+    gross_motor: {
+      name: '粗大動作', key: 'gross_motor', cutoff: 4,
+      questions: [
+        { 
+          id: 'GM-4-5y-Q1', type: '問', weight: 1,
+          text: '可以自己放手一腳一階上下樓梯？', 
+          description: '可以放手自己一腳一階上樓及下樓 (若只能上樓，下樓仍需扶則不算通過)。',
+          emoji: '🪜', kind: 'emoji' 
+        },
+        { 
+          id: 'GM-4-5y-Q2', type: '實', weight: 1,
+          text: '可以交替跨步走直線？', 
+          description: '可以交替跨步走一直線 (不需腳跟接腳尖，只要走直線即可)。',
+          emoji: '🚶', kind: 'emoji' 
+        },
+        { 
+          id: 'GM-4-5y-Q3', type: '實', weight: 2,
+          text: '★ 可以穩定地單腳站至少 3 秒？', 
+          description: '雙腳需分開輪流測試。在無任何支撐下，穩定不搖晃地以單腳站立至少 3 秒鐘。',
+          emoji: '🦩', kind: 'emoji' 
+        },
+        { 
+          id: 'GM-4-5y-Q4', type: '實', weight: 1,
+          text: '可以穩定地單腳跳至少 2 下？', 
+          description: '雙腳均需輪流測試。需穩定地以單腳連續跳躍至少兩下 (身體不過度搖晃)。',
+          emoji: '🐇', kind: 'emoji' 
+        },
+      ]
+    },
+    fine_motor: {
+      name: '精細動作', key: 'fine_motor', cutoff: 3,
+      questions: [
+        { 
+          id: 'FM-4-5y-Q1', type: '實', weight: 1,
+          text: '可以模仿大人將紙對摺一半，並且壓出摺痕？', 
+          description: '可以對摺薄紙並以手指壓出明顯摺痕 (邊緣不用完全對齊)。',
+          emoji: '📄', kind: 'emoji' 
+        },
+        { 
+          id: 'FM-4-5y-Q2', type: '實', weight: 1,
+          text: '可以使用剪刀連續向前剪至少 10 公分長？', 
+          description: '剪刀下刀處要連續穩定，不可用小碎剪。剪完距離線條最大偏移 ≤ 0.8 公分。',
+          emoji: '✂️', kind: 'emoji' 
+        },
+        { 
+          id: 'FM-4-5y-Q3', type: '實', weight: 2,
+          text: '★ (圖卡4) 可以看著圖形照著畫出一樣的形狀？', 
+          description: '不示範。4歲：至少可以畫出「十字」。4歲半：至少可以畫出「方形」。',
+          kind: 'image',
+          imageSrc: '/assets/card4_shapes.png'
+        },
+      ]
+    },
+    cognitive_language: {
+      name: '認知語言發展', key: 'cognitive_language', cutoff: 4,
+      questions: [
+        { 
+          id: 'CL-4-5y-Q1', type: '實', weight: 1,
+          text: '可以和人一問一答持續對話，且回答內容切題？', 
+          description: '至少能以 4-5 個詞彙以上的完整句子敘述 (主詞+動詞+受詞)，且不會答非所問。',
+          emoji: '🗣️', kind: 'emoji' 
+        },
+        { 
+          id: 'CL-4-5y-Q2', type: '實', weight: 2,
+          text: '★ (圖卡5-8) 可以用完整句子敘述故事情節？', 
+          description: '請孩子排出圖卡順序並描述。需符合：1.完整句子 2.語法正確 3.使用連接詞 (因為..所以/然後)。',
+          kind: 'multi_image',
+          flashcardOptions: [
+            { label: '圖卡 5', imageSrc: '/assets/card5_story.png', bgColor: 'bg-white' },
+            { label: '圖卡 6', imageSrc: '/assets/card6_story.png', bgColor: 'bg-white' },
+            { label: '圖卡 7', imageSrc: '/assets/card7_story.png', bgColor: 'bg-white' },
+            { label: '圖卡 8', imageSrc: '/assets/card8_story.png', bgColor: 'bg-white' },
+          ]
+        },
+        { 
+          id: 'CL-4-5y-Q3', type: '實', weight: 1,
+          text: '(圖卡5) 指著圖卡問『什麼在桌子下面？』', 
+          description: '孩子能正確回答出「球」。(請使用第一張故事圖卡)',
+          kind: 'image',
+          imageSrc: '/assets/card5_story.png'
+        },
+        { 
+          id: 'CL-4-5y-Q4', type: '實', weight: 1,
+          text: '(圖卡5) 能『指認』出圖卡小球的 4 種顏色？', 
+          description: '紅、黃、藍、綠四種顏色均需答對才算通過。',
+          kind: 'image',
+          imageSrc: '/assets/card5_story.png'
+        },
+        { 
+          id: 'CL-4-5y-Q5', type: '實', weight: 1,
+          text: '孩子構音清晰？', 
+          description: '請孩子跟唸：「三」、「八」、「狗」、「阿公」、「喝水」、「蛋糕」、「車」、「兔子」。需全對。',
+          emoji: '🎙️', kind: 'emoji' 
+        },
+      ]
+    },
+    social: {
+      name: '社會發展', key: 'social', cutoff: 4,
+      questions: [
+        { 
+          id: 'S-4-5y-Q1', type: '問', weight: 1,
+          text: '(反向題) 孩子能意識到危險，不常爬高或從高處跳下？', 
+          description: '⚠️ 此為反向題。若孩子「有警覺心，不會亂爬高」，請選「是」(得分)。若孩子「常不害怕危險亂跳」，請選「否」。',
+          emoji: '🛑', kind: 'emoji' 
+        },
+        { 
+          id: 'S-4-5y-Q2', type: '問', weight: 1,
+          text: '有角色扮演以及有情境的辦家家酒？', 
+          description: '例如假裝老闆賣東西，或當醫生幫娃娃打針，且玩法多變。',
+          emoji: '🎭', kind: 'emoji' 
+        },
+        { 
+          id: 'S-4-5y-Q3', type: '實', weight: 2,
+          text: '★ 施測過程中，孩子的眼神可以穩定看著施測者或家長？', 
+          description: '整個互動過程中，眼神可以穩定注視，不會飄來飄去或完全不看人。',
+          emoji: '👁️', kind: 'emoji' 
+        },
+        { 
+          id: 'S-4-5y-Q4', type: '實', weight: 1,
+          text: '施測過程中，孩子可以穩定地坐在位置上？', 
+          description: '不會在診間走來走去，或坐在椅子上扭來扭去 (坐不住)。',
+          emoji: '🪑', kind: 'emoji' 
+        },
+      ]
+    }
+  },
+
+  // ==========================================
+  // 9. 5-7 歲 (量表九) - 尚未建置，但必須佔位
+  // ==========================================
   '5-7y': createEmptyAgeGroupData(),
+
 };
