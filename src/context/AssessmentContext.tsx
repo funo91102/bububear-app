@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState } from 'react';
-// 修正 1: ReactNode 必須使用 type-only import
 import type { ReactNode } from 'react';
 
 // 導入專案型別
@@ -7,7 +6,7 @@ import type {
   Screen, 
   ChildProfile, 
   Answers, 
-  AnswerStatus, 
+  StandardAnswerStatus, // ✅ 修正：使用 types/index.ts 定義的名稱
   Feedback, 
   AssessmentResult 
 } from '../types';
@@ -20,21 +19,21 @@ interface AssessmentContextType {
   setChildProfile: (profile: ChildProfile) => void;
   
   answers: Answers;
-  // 統一命名為 setAnswer (符合 AssessmentScreen 的呼叫)
-  setAnswer: (questionId: string, status: AnswerStatus) => void;
-  // (選用) 保留 updateAnswer 作為別名，相容舊程式碼
-  updateAnswer: (questionId: string, status: AnswerStatus) => void;
+  // 統一命名為 setAnswer (參數型別同步為 StandardAnswerStatus)
+  setAnswer: (questionId: string, status: StandardAnswerStatus) => void;
+  // 保留 updateAnswer 作為別名，相容舊程式碼
+  updateAnswer: (questionId: string, status: StandardAnswerStatus) => void;
 
   feedback: Feedback | null;
   setFeedback: (feedback: Feedback) => void;
 
-  // 新增：評估結果的狀態與更新函式 (解決結果頁跳回問題)
+  // 評估結果狀態
   assessmentResult: AssessmentResult | null;
   setAssessmentResult: (result: AssessmentResult) => void;
 
-  // 新增：當前題號索引 (選用，若希望跨頁面保留進度)
+  // 當前題號索引
   currentQuestionIndex: number;
-  setCurrentQuestionIndex: (index: number | ((prev: number) => number)) => void;
+  setCurrentQuestionIndex: React.Dispatch<React.SetStateAction<number>>;
 
   resetAssessment: () => void;
 }
@@ -46,15 +45,12 @@ export const AssessmentProvider: React.FC<{ children: ReactNode }> = ({ children
   const [childProfile, setChildProfile] = useState<ChildProfile | null>(null);
   const [answers, setAnswers] = useState<Answers>({});
   const [feedback, setFeedback] = useState<Feedback | null>(null);
-  
-  // 新增結果狀態
   const [assessmentResult, setAssessmentResult] = useState<AssessmentResult | null>(null);
-  
-  // 新增題號狀態 (讓 AssessmentScreen 可以讀寫)
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(0);
 
   // 核心函式：儲存答案
-  const setAnswer = (questionId: string, status: AnswerStatus) => {
+  // 這裡的 status 使用 StandardAnswerStatus
+  const setAnswer = (questionId: string, status: StandardAnswerStatus) => {
     setAnswers(prev => ({ ...prev, [questionId]: status }));
   };
 
@@ -63,8 +59,8 @@ export const AssessmentProvider: React.FC<{ children: ReactNode }> = ({ children
     setChildProfile(null);
     setAnswers({});
     setFeedback(null);
-    setAssessmentResult(null); // 重置結果
-    setCurrentQuestionIndex(0); // 重置題號
+    setAssessmentResult(null);
+    setCurrentQuestionIndex(0);
   };
 
   return (
@@ -74,12 +70,12 @@ export const AssessmentProvider: React.FC<{ children: ReactNode }> = ({ children
       childProfile, 
       setChildProfile, 
       answers, 
-      setAnswer,               // ✅ 主要使用這個
-      updateAnswer: setAnswer, // ✅ 相容舊名 (指向同一個函式)
+      setAnswer,
+      updateAnswer: setAnswer, 
       feedback,
       setFeedback,
-      assessmentResult,        // ✅ 讓 FeedbackScreen 可以存結果
-      setAssessmentResult,     // ✅ 讓 ResultsScreen 可以讀結果
+      assessmentResult,
+      setAssessmentResult,
       currentQuestionIndex,
       setCurrentQuestionIndex,
       resetAssessment 

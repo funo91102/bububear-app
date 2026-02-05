@@ -149,49 +149,72 @@ const WelcomeScreen: FC = () => {
           <h1 className="text-2xl font-black text-slate-800 tracking-tight">
             歡迎使用步步熊<br/>兒童發展篩檢
           </h1>
+          <p className="text-slate-400 text-sm mt-3 font-medium">讓我們開始關心寶貝的成長，<br/>請先提供一些基本資料。</p>
         </div>
 
         <div className="space-y-5">
-          <input 
-            type="text" value={nickname} onChange={(e) => { setNickname(e.target.value); setErrorMsg(null); }}
-            placeholder="寶貝暱稱"
-            className="w-full px-4 py-3 rounded-xl bg-slate-100 border-2 border-slate-200 outline-none font-bold focus:border-emerald-400 focus:bg-white"
-          />
-          <input 
-            type="date" value={birthDate} onChange={(e) => { setBirthDate(e.target.value); setErrorMsg(null); }}
-            className="w-full px-4 py-3 rounded-xl bg-slate-100 border-2 border-slate-200 outline-none font-bold"
-          />
-          <div className="flex gap-4">
-            <label className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border-2 cursor-pointer font-bold ${isPremature ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-200 text-slate-500'}`}>
-              <input type="radio" checked={isPremature} onChange={() => setIsPremature(true)} className="hidden" />是早產
-            </label>
-            <label className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border-2 cursor-pointer font-bold ${!isPremature ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-200 text-slate-500'}`}>
-              <input type="radio" checked={!isPremature} onChange={() => setIsPremature(false)} className="hidden" />非早產
-            </label>
+          <div>
+            <label className="block text-xs font-bold text-slate-500 mb-2 ml-1">寶貝的暱稱</label>
+            <input 
+              type="text" value={nickname} onChange={(e) => { setNickname(e.target.value); setErrorMsg(null); }}
+              placeholder="例如：小胖"
+              className="w-full px-4 py-3 rounded-xl bg-slate-100 border-2 border-slate-200 outline-none font-bold focus:border-emerald-400 focus:bg-white transition-all"
+            />
           </div>
+          
+          <div>
+            <label className="block text-xs font-bold text-slate-500 mb-2 ml-1">出生日期</label>
+            <input 
+              type="date" value={birthDate} onChange={(e) => { setBirthDate(e.target.value); setErrorMsg(null); }}
+              className="w-full px-4 py-3 rounded-xl bg-slate-100 border-2 border-slate-200 outline-none font-bold focus:border-emerald-400 focus:bg-white transition-all"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-500 mb-2 ml-1">寶寶是早產兒嗎？</label>
+            <div className="flex gap-4">
+              <label className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border-2 cursor-pointer font-bold transition-all ${isPremature ? 'border-emerald-500 bg-emerald-50 text-emerald-700 shadow-sm' : 'border-slate-200 text-slate-400'}`}>
+                <input type="radio" checked={isPremature} onChange={() => setIsPremature(true)} className="hidden" />是
+              </label>
+              <label className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border-2 cursor-pointer font-bold transition-all ${!isPremature ? 'border-emerald-500 bg-emerald-50 text-emerald-700 shadow-sm' : 'border-slate-200 text-slate-400'}`}>
+                <input type="radio" checked={!isPremature} onChange={() => setIsPremature(false)} className="hidden" />否
+              </label>
+            </div>
+            {isPremature && (
+               <p className="text-[10px] text-slate-400 mt-2 px-1">早產兒指妊娠週數小於37週的寶寶。</p>
+            )}
+          </div>
+
           {isPremature && (
             <input 
               type="number" value={gestationalWeeks} onChange={(e) => { setGestationalWeeks(e.target.value); setErrorMsg(null); }}
-              placeholder="妊娠週數" 
-              className="w-full px-4 py-3 rounded-xl bg-slate-100 border-2 border-slate-200 outline-none font-bold"
+              placeholder="請輸入妊娠週數" 
+              className="w-full px-4 py-3 rounded-xl bg-slate-100 border-2 border-slate-200 outline-none font-bold focus:border-emerald-400 focus:bg-white transition-all animate-in slide-in-from-top-2 duration-200"
             />
           )}
+          
           {errorMsg && (
             <div className="text-rose-500 bg-rose-50 px-4 py-3 rounded-xl text-sm font-bold flex items-center gap-2 animate-pulse">
               <AlertCircleIcon className="w-4 h-4" />{errorMsg}
             </div>
           )}
+          
           <button 
             onClick={handleStart}
-            className="w-full mt-2 bg-emerald-500 hover:bg-emerald-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg active:scale-95"
+            className="w-full mt-2 bg-emerald-500 hover:bg-emerald-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2"
           >
-            <PlayIcon className="w-5 h-5 fill-current inline mr-2" />開始測驗
+            <PlayIcon className="w-5 h-5 fill-current" />下一步
           </button>
         </div>
       </div>
-      <div className="mt-8 text-center space-y-1">
-        <p className="text-xs text-slate-400 font-bold">傅炯皓醫師 製作</p>
-        <p className="text-xs text-rose-400 font-bold">測試結果僅供參考，請與您的兒科醫師進行正式評估！</p>
+
+      {/* 底部資訊區：補回衛福部說明並統一風格 */}
+      <div className="mt-8 pb-10 text-center space-y-2">
+        <p className="text-[12px] text-slate-400 font-medium">傅炯皓醫師 製作</p>
+        <p className="text-[11px] text-slate-400">本工具依據衛福部兒童發展連續篩檢量表設計</p>
+        <p className="text-[11px] text-rose-500 font-bold px-4 tracking-tight">
+          測試結果僅供參考，請與您的兒科醫師進行正式評估！
+        </p>
       </div>
     </div>
   );

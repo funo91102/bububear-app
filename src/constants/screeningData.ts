@@ -1,4 +1,4 @@
-import type { ScreeningData, AgeGroupData, Domain, DomainKey } from '../types';
+import type { ScreeningData, Domain, DomainKey } from '../types';
 
 // --- 輔助函式：產生空資料 ---
 const createEmptyDomain = (name: string, key: DomainKey): Domain => ({
@@ -8,12 +8,7 @@ const createEmptyDomain = (name: string, key: DomainKey): Domain => ({
   questions: [],
 });
 
-const createEmptyAgeGroupData = (): AgeGroupData => ({
-  gross_motor: createEmptyDomain('粗大動作', 'gross_motor'),
-  fine_motor: createEmptyDomain('精細動作', 'fine_motor'),
-  cognitive_language: createEmptyDomain('認知語言發展', 'cognitive_language'),
-  social: createEmptyDomain('社會發展', 'social'),
-});
+// 修正：移除了未使用的 createEmptyAgeGroupData 函式，解決 TS6133 編譯錯誤
 
 // --- 正式資料庫 ---
 export const screeningData: ScreeningData = {
@@ -115,6 +110,7 @@ export const screeningData: ScreeningData = {
         },
       ]
     },
+    // 此處為 6-9m 的空社會面向，計分引擎會自動過濾滿分為 0 的項目
     social: createEmptyDomain('社會發展', 'social'), 
   },
 
@@ -675,7 +671,7 @@ export const screeningData: ScreeningData = {
         { 
           id: 'GM-3-4y-Q3', type: '實/問', weight: 1,
           text: '可以單手過肩丟小球2公尺？', 
-          description: '能用單手將球舉過肩將球丟出至少 2 公尺遠。(用雙手或向上拋出皆不算)',
+          description: '能用單手將球舉過肩將球丟出至少 2 公尺遠。(用雙手或向上面拋出皆不算)',
           emoji: '⚾', kind: 'emoji'
         },
         { 
