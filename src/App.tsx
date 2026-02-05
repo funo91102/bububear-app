@@ -1,4 +1,4 @@
-import { useState } from 'react'; // ✅ 修正1: 加入 React 解決 TS2686 錯誤
+import { useState } from 'react'; // ✅ 修正 1: 移除未使用的 React，解決 Vercel TS6133 錯誤
 import { AssessmentProvider, useAssessment } from './context/AssessmentContext';
 import AssessmentScreen from './components/AssessmentScreen';
 import ResultsScreen from './components/ResultsScreen';
@@ -8,8 +8,11 @@ import { calculateAge } from './utils/ageCalculator';
 import { PlayIcon, ChevronLeftIcon } from './components/Icons';
 import './index.css';
 
-// ✅ 修正2: 務必確認這裡有 '18-24m'，否則按鈕會被鎖住
-const supportedAgeGroups = ['6-9m', '9-12m', '12-15m', '15-18m', '18-24m', '2-3y'];
+// ✅ 修正 2: 加入 '4-5y' 與 '3-4y'，確保這兩個年齡層的家長能順利開始測驗
+const supportedAgeGroups = [
+  '6-9m', '9-12m', '12-15m', '15-18m', '18-24m', 
+  '2-3y', '3-4y', '4-5y'
+];
 
 // --- 內部元件 1: 確認資訊頁面 ---
 const ConfirmationScreen = () => {
@@ -70,7 +73,7 @@ const ConfirmationScreen = () => {
                  ) : (
                    <div className="text-amber-600/80 flex flex-col items-center">
                      <span>🚧 此階段題庫建置中</span>
-                     <span className="font-normal opacity-80 mt-1">目前開放：6m-18m, 18-24m, 2-3y</span>
+                     <span className="font-normal opacity-80 mt-1">目前已開放：6m - 5y 完整量表</span>
                    </div>
                  )}
                </div>

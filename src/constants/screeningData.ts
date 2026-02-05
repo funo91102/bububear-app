@@ -116,7 +116,24 @@ export const screeningData: ScreeningData = {
         },
       ]
     },
-    social: createEmptyDomain('社會發展', 'social'), 
+    // ✅ 修正 1: 補回遺失的 6-9m 社會發展題目
+    social: {
+      name: '社會發展', key: 'social', cutoff: 3, 
+      questions: [
+        {
+          id: 'S-6-9m-Q1', type: '問', weight: 1,
+          text: '對陌生人會表現出害羞或焦慮嗎？',
+          description: '看到不認識的人會轉頭、安靜或哭泣 (Stranger Anxiety)。',
+          emoji: '😳', kind: 'emoji'
+        },
+        {
+          id: 'S-6-9m-Q2', type: '實', weight: 2,
+          text: '★ 叫他的名字會有反應嗎？',
+          description: '會轉頭看或是停止動作。',
+          emoji: '👂', kind: 'emoji'
+        }
+      ]
+    }, 
   },
 
   // ==========================================
@@ -655,7 +672,7 @@ export const screeningData: ScreeningData = {
   },
 
   // ==========================================
-  // 7. 3-4 歲 (量表七)
+  // 7. 3-4 歲
   // ==========================================
   '3-4y': {
     gross_motor: {
@@ -711,7 +728,7 @@ export const screeningData: ScreeningData = {
           id: 'CL-3-4y-Q1', type: '實', weight: 2,
           text: '★ (圖卡3) 大小比較：指著球問『哪一個比較大/小？』', 
           description: '需兩次問答皆正確。先問「哪一個比較大？」，再問「哪一個比較小？」。',
-          emoji: '⚖️', kind: 'image', // 使用單張圖卡顯示
+          emoji: '⚖️', kind: 'image',
           imageSrc: '/assets/card3_combined.png'
         },
         { 
@@ -759,6 +776,116 @@ export const screeningData: ScreeningData = {
     }
   },
   
-  '4-5y': createEmptyAgeGroupData(), 
+  // ==========================================
+  // 8. 4-5 歲 (量表八) - ✅ 修正 2: 填入完整題庫
+  // ==========================================
+  '4-5y': {
+    gross_motor: {
+      name: '粗大動作', key: 'gross_motor', cutoff: 4,
+      questions: [
+        {
+          id: 'GM-4-5y-Q1', type: '實', weight: 2,
+          text: '★ 能單腳站立 3 秒以上嗎？',
+          description: '不扶東西，雙手可張開保持平衡。',
+          warning: '請注意周圍環境平坦安全，避免跌倒。',
+          emoji: '🦩', kind: 'emoji'
+        },
+        {
+          id: 'GM-4-5y-Q2', type: '實', weight: 1,
+          text: '能單腳連續跳 5 下嗎？',
+          description: '左右腳皆可嘗試，其中一腳達成即可。',
+          emoji: '🐇', kind: 'emoji'
+        },
+        {
+          id: 'GM-4-5y-Q3', type: '實', weight: 1,
+          text: '能雙腳併攏往前跳遠嗎？',
+          description: '雙腳同時起跳、同時落地，距離約 30 公分以上。',
+          emoji: '💨', kind: 'emoji'
+        }
+      ]
+    },
+    fine_motor: {
+      name: '精細動作', key: 'fine_motor', cutoff: 4,
+      questions: [
+        {
+          id: 'FM-4-5y-Q1', type: '實', weight: 1,
+          text: '會畫人像（至少包含頭、身體、手腳中的三個部位）嗎？',
+          description: '請提供紙筆，請孩子畫一個人。',
+          emoji: '🎨', kind: 'emoji'
+        },
+        {
+          id: 'FM-4-5y-Q2', type: '實', weight: 2,
+          text: '★ 會使用剪刀沿著直線剪開紙張嗎？',
+          description: '請提供安全剪刀與畫有直線的紙。',
+          warning: '使用剪刀時請家長全程注意安全。',
+          emoji: '✂️', kind: 'image',
+          imageSrc: '/assets/tools_scissors.png'
+        },
+        {
+          id: 'FM-4-5y-Q3', type: '實', weight: 2,
+          text: '★ 能模仿畫出「十字」或「正方形」嗎？',
+          description: '請出示圖卡，請孩子照著畫。',
+          emoji: '🟩', kind: 'image',
+          imageSrc: '/assets/card4_shapes.png'
+        }
+      ]
+    },
+    cognitive_language: {
+      name: '認知語言發展', key: 'cognitive_language', cutoff: 4,
+      questions: [
+        {
+          id: 'CL-4-5y-Q1', type: '實', weight: 1,
+          text: '能正確數出 3 個以上的物品嗎？',
+          description: '例如指著糖果數「1、2、3」。',
+          emoji: '🍬', kind: 'emoji'
+        },
+        {
+          id: 'CL-4-5y-Q2', type: '實', weight: 1,
+          text: '能分辨並說出 3 種以上的顏色嗎？',
+          description: '指著紅、黃、藍、綠等顏色問孩子：「這是什麼顏色？」',
+          emoji: '🌈', kind: 'emoji'
+        },
+        {
+          id: 'CL-4-5y-Q3', type: '實', weight: 1,
+          text: '能看圖說出簡單的故事內容嗎？',
+          description: '請使用連環圖卡 (圖5-8)，請孩子依序看圖說故事。',
+          kind: 'multi_image',
+          flashcardOptions: [
+            { label: '圖卡 5', imageSrc: '/assets/card5_story1.png' },
+            { label: '圖卡 6', imageSrc: '/assets/card6_story2.png' },
+            { label: '圖卡 7', imageSrc: '/assets/card7_story3.png' },
+            { label: '圖卡 8', imageSrc: '/assets/card8_story4.png' }
+          ]
+        }
+      ]
+    },
+    social: {
+      name: '社會發展', key: 'social', cutoff: 4,
+      questions: [
+        {
+          id: 'S-4-5y-Q1', type: '問', weight: 1,
+          text: '會自己穿脫簡單的衣物或鞋子嗎？',
+          description: '不包含綁鞋帶或扣複雜的鈕扣。',
+          emoji: '👕', kind: 'emoji'
+        },
+        {
+          id: 'S-4-5y-Q2', type: '問', weight: 1,
+          text: '玩遊戲時，能遵守簡單的規則並輪流嗎？',
+          description: '例如玩桌遊、鬼抓人等團體遊戲。',
+          emoji: '🎲', kind: 'emoji'
+        },
+        {
+          id: 'S-4-5y-Q3', type: '問', weight: 1,
+          text: '能用言語表達自己的情緒嗎？',
+          description: '例如：「我生氣了」、「我很開心」。',
+          emoji: '😊', kind: 'emoji'
+        }
+      ]
+    }
+  },
+
+  // ==========================================
+  // 9. 5-7 歲 (量表九) - 尚未建置
+  // ==========================================
   '5-7y': createEmptyAgeGroupData(),
 };
