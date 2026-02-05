@@ -2,13 +2,19 @@ import React, { useState, useMemo } from 'react';
 import { useAssessment } from '../context/AssessmentContext';
 import { calculateAge } from '../utils/ageCalculator';
 import { screeningData } from '../constants/screeningData';
-// 引入防呆機制工具
 import { isAgeGroupImplemented, getImplementedAgeGroups } from '../utils/screeningEngine'; 
-import { CheckIcon, XMarkIcon, AlertIcon, AlertCircleIcon, StethoscopeIcon } from './Icons'; 
-// ✅ 修正 1：改用重構後的新型別名稱 StandardAnswerStatus
-import type { StandardAnswerStatus } from '../types';
-// ✅ 從外部匯入 Flashcard 元件 (支援單圖/多圖模式)
+import { CheckIcon, XMarkIcon, AlertIcon, AlertCircleIcon, StethoscopeIcon, RefreshIcon } from './Icons'; 
+import type { StandardAnswerStatus, RawAnswerValue, DomainKey } from '../types';
+// ✅ 修正重點：加上大括號 { }，改回具名匯入
 import { Flashcard } from './Flashcard';
+
+// 定義明確的 Domain 順序
+const DOMAIN_ORDER: DomainKey[] = [
+  'gross_motor',
+  'fine_motor',
+  'cognitive_language',
+  'social'
+];
 
 const AssessmentScreen: React.FC = () => {
   const { childProfile, setAnswer, setScreen } = useAssessment();
@@ -32,9 +38,9 @@ const AssessmentScreen: React.FC = () => {
   
   const ageGroupKey = ageKeyInfo.ageGroupKey;
 
-  // 🛡️ 防呆檢查：如果選到了未建置的年齡層，顯示「建置中」
+  // 🛡️ 防呆檢查
   if (ageGroupKey && !isAgeGroupImplemented(ageGroupKey)) {
-    const availableAges = getImplementedAgeGroups().join(', ');
+    const availableAges = getImplementedAgeGroups().map(key => key).join(', ');
 
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-8 text-center bg-amber-50 space-y-6">
@@ -64,7 +70,7 @@ const AssessmentScreen: React.FC = () => {
     );
   }
 
-  // 2. 取得資料物件 (Raw Data)
+  // 2. 取得資料物件
   const rawData = useMemo(() => {
     if (!ageGroupKey) return null;
     return screeningData[ageGroupKey];
@@ -73,13 +79,7 @@ const AssessmentScreen: React.FC = () => {
   // 3. 展開題目列表
   const questions = useMemo(() => {
     if (!rawData) return [];
-    
-    return [
-      ...(rawData.gross_motor?.questions || []), 
-      ...(rawData.fine_motor?.questions || []), 
-      ...(rawData.cognitive_language?.questions || []), 
-      ...(rawData.social?.questions || [])
-    ];
+    return DOMAIN_ORDER.flatMap(domain => rawData[domain]?.questions ?? []);
   }, [rawData]);
 
   // --- 錯誤處理介面 ---
@@ -107,10 +107,29 @@ const AssessmentScreen: React.FC = () => {
 
   // 取得目前題目
   const currentQuestion = questions[currentQuestionIndex];
+
+  // Hard Guard
+  if (!currentQuestion) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-8 bg-slate-50 text-center">
+        <div className="w-16 h-16 bg-slate-200 rounded-full flex items-center justify-center mb-4">
+          <RefreshIcon className="w-8 h-8 text-slate-500" />
+        </div>
+        <h3 className="text-xl font-black text-slate-700 mb-2">題目索引異常</h3>
+        <p className="text-slate-500 text-sm mb-6">系統檢測到異常狀態，請重新開始評估。</p>
+        <button 
+          onClick={() => setScreen('welcome')}
+          className="px-6 py-3 bg-slate-800 text-white rounded-xl font-bold shadow-lg hover:bg-slate-700 transition-all active:scale-95"
+        >
+          重新開始
+        </button>
+      </div>
+    );
+  }
   
   const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
 
-  // ✅ 修正 2：使用重構後的 StandardAnswerStatus
+  // 使用 StandardAnswerStatus 處理按鈕邏輯
   const handleAnswer = (status: StandardAnswerStatus) => {
     if (status === 'fail') setShowResilience(true);
     else confirmAnswer(status);
@@ -120,8 +139,7 @@ const AssessmentScreen: React.FC = () => {
     confirmAnswer('doctor_assessment');
   };
 
-  // ✅ 修正 3：使用重構後的 StandardAnswerStatus
-  const confirmAnswer = (status: StandardAnswerStatus) => {
+  const confirmAnswer = (status: RawAnswerValue) => {
     setAnswer(currentQuestion.id, status);
     setShowResilience(false);
     
@@ -146,11 +164,11 @@ const AssessmentScreen: React.FC = () => {
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 pb-56">
-        <div className="bg-white rounded-[2.5rem] p-6 shadow-sm border border-slate-200/50 flex flex-col items-center">
+        <div className="bg-white rounded-[2.5rem] p-6 shadow-sm border border-slate-200/50 flex flex-col items-center animate-in fade-in slide-in-from-bottom-4 duration-500">
           
           <div className="w-full mb-6 min-h-[240px] flex items-center justify-center bg-slate-50 rounded-3xl p-1 border border-slate-100/50 relative overflow-hidden">
             
-            {/* 情況 1: 多圖卡題 (18-24m 專用) */}
+            {/* 情況 1: 多圖卡題 */}
             {currentQuestion.kind === 'multi_image' && (
               <Flashcard 
                 mode="multi" 
@@ -158,15 +176,15 @@ const AssessmentScreen: React.FC = () => {
               />
             )}
 
-            {/* ✅ 修正 4：支援 3-4 歲量表七的單圖顯示 (kind: 'image') */}
-            {(currentQuestion.kind === 'image' || currentQuestion.kind === 'single_image') && (
+            {/* 情況 2: 單圖題 */}
+            {currentQuestion.kind === 'image' && (
               <Flashcard 
                 mode="single" 
-                src={currentQuestion.imageSrc || currentQuestion.flashcardImageSrc || ""} 
+                src={currentQuestion.imageSrc || ""} 
               />
             )}
 
-            {/* 情況 2: Emoji 題 (標準題型) */}
+            {/* 情況 3: Emoji 題 */}
             {currentQuestion.kind === 'emoji' && (
               <div className="text-8xl drop-shadow-sm select-none animate-in zoom-in duration-500">
                 {currentQuestion.emoji}

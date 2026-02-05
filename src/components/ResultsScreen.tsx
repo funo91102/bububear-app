@@ -2,7 +2,6 @@ import React, { useMemo, useRef, useState } from 'react';
 import { useAssessment } from '../context/AssessmentContext';
 import { calculateAge } from '../utils/ageCalculator';
 import { screeningData } from '../constants/screeningData';
-// ✅ 修正 1: 引入 getDomainMaxScore 用於動態計算滿分
 import { getDomainMaxScore } from '../utils/screeningEngine';
 import { CheckIcon, AlertCircleIcon, RefreshIcon, HeartIcon, DownloadIcon, StethoscopeIcon } from './Icons';
 import type { DomainKey, AgeGroupKey } from '../types';
@@ -53,45 +52,41 @@ const ResultsScreen: React.FC = () => {
     };
   }, [childProfile]);
 
-  // ✨ 優化 3: Single Source of Truth (單一真理來源)
-  // 統一處理所有面向的邏輯 (分數、狀態、醫師評估、隱藏)，供 App 與 報告 共用
+  // ✨ Single Source of Truth: 統一處理所有面向的邏輯
   const resolvedDomains = useMemo(() => {
     if (!ageData.key) return [];
     
-    // 強制型別斷言，確保 key 存在
     const currentAgeKey = ageData.key as AgeGroupKey;
 
     return (Object.keys(DOMAIN_NAMES) as DomainKey[]).map(key => {
       const domainData = screeningData[currentAgeKey][key];
       
-      // ✅ 修正 2: 使用工具函式動態計算滿分 (因為資料庫已移除 maxScore 欄位)
       const maxScore = getDomainMaxScore(currentAgeKey, key);
       
-      // 若滿分為 0，回傳 null (後續濾掉)
       if (maxScore === 0) return null;
 
       const questions = domainData.questions;
-      // 檢查是否有「醫師評估」
       const hasDoctorAssessment = questions.some(q => answers[q.id] === 'doctor_assessment');
       
       const status = domainStatuses[key];
+      // 這裡的 isPass 用於 UI 卡片的基本顏色分類 (Pass/Max 為綠色系，Fail 為紅色系)
       const isPass = status === 'pass' || status === 'max';
 
       return {
         key,
         name: DOMAIN_NAMES[key],
         score: domainScores[key],
-        maxScore, // 這現在是動態計算出來的正確數值
+        maxScore,
         cutoff: domainData.cutoff,
         hasDoctorAssessment,
         isPass,
-        status
+        status // 'max' | 'pass' | 'fail'
       };
-    }).filter((item): item is NonNullable<typeof item> => item !== null); // 過濾掉 null
+    }).filter((item): item is NonNullable<typeof item> => item !== null);
   }, [ageData.key, answers, domainStatuses, domainScores]);
 
 
-  // 2. 匯出圖片功能 (✨ 優化 2: 增強截圖參數)
+  // 2. 匯出圖片功能
   const handleExportImage = async () => {
     if (!reportRef.current) return;
     setIsExporting(true);
@@ -102,7 +97,6 @@ const ResultsScreen: React.FC = () => {
         scale: 2, 
         backgroundColor: '#ffffff',
         useCORS: true, 
-        // 關鍵參數：確保在手機上也能截出完整的電腦版寬度報告
         windowWidth: reportRef.current.scrollWidth,
         windowHeight: reportRef.current.scrollHeight
       });
@@ -120,14 +114,14 @@ const ResultsScreen: React.FC = () => {
     }
   };
 
-  // 3. 定義支持性訊息邏輯 (✨ 優化 1: 明確定義樣式，避免字串替換風險)
+  // 3. 定義支持性訊息邏輯 (新增 'great' 狀態)
   const supportTheme = useMemo(() => {
     switch (overallStatus) {
       case 'referral': 
         return {
           bg: 'bg-rose-50', 
-          bgStrong: 'bg-rose-100', // 明確定義深色背景
-          border: 'border-rose-100', // 明確定義邊框色
+          bgStrong: 'bg-rose-100', 
+          border: 'border-rose-100', 
           text: 'text-rose-800',
           icon: '💪', bearEmoji: '🐻‍⚕️',
           title: '讓我們一起多留意寶寶的進度',
@@ -135,7 +129,7 @@ const ResultsScreen: React.FC = () => {
           actionTitle: '堅定建議',
           actionDesc: '篩檢並非診斷，但這是一個寶貴的提醒。建議您盡快預約小兒科醫師，進行更精確的發展評估，早期的專業協助是送給寶寶最好的成長禮物。'
         };
-      case 'follow_up':
+      case 'normal': // 這裡的 normal 代表「有通過，但未滿分」-> 需追蹤
         return {
           bg: 'bg-amber-50', 
           bgStrong: 'bg-amber-100',
@@ -143,27 +137,33 @@ const ResultsScreen: React.FC = () => {
           text: 'text-amber-800',
           icon: '🌱', bearEmoji: '🐻',
           title: '寶寶正在努力進步中！',
-          description: '目前寶寶在部分項目已達標，但有些地方還需要我們多花點心力陪伴練習。',
+          description: '目前寶寶的發展皆在及格範圍內，但部分項目尚未完全掌握，建議持續陪伴練習。',
           actionTitle: '支持指引',
-          actionDesc: '建議您可以增加親子互動，若您感到不放心，尋求醫師的專業意見也是很好的選擇。'
+          actionDesc: '建議您可以增加親子互動時間，多給予寶寶嘗試的機會。若您感到不放心，下次健兒門診時可諮詢醫師。'
         };
-      case 'normal':
-      default:
+      case 'great': // 新增：全滿分狀態
         return {
           bg: 'bg-emerald-50', 
           bgStrong: 'bg-emerald-100',
           border: 'border-emerald-100',
           text: 'text-emerald-800',
           icon: '🌟', bearEmoji: '🥳',
-          title: '太棒了！寶寶如期達標',
-          description: '目前的發展都在安全範圍內，請繼續維持優質的親子互動與共讀。',
+          title: '太棒了！寶寶發展表現優異',
+          description: '寶寶在所有項目皆獲得滿分，發展里程碑掌握得非常好！',
           actionTitle: '持續保持',
-          actionDesc: '請記得定期帶寶寶進行預防注射，並讓兒科醫師進行例行性發展評估喔！'
+          actionDesc: '請繼續維持優質的親子互動與共讀習慣，並記得定期帶寶寶進行預防注射喔！'
+        };
+      default: // Fallback
+        return {
+          bg: 'bg-slate-50', bgStrong: 'bg-slate-100', border: 'border-slate-100', text: 'text-slate-800',
+          icon: '🤔', bearEmoji: '🐻', title: '篩檢完成', description: '', actionTitle: '', actionDesc: ''
         };
     }
   }, [overallStatus]);
 
-  const showAnxietyComfort = feedback && feedback.anxietyScore >= 7 && overallStatus !== 'normal';
+  // 若需要顯示焦慮安撫 (僅在非 referral 且焦慮分數高時，或者 referral 時都可顯示，視需求而定)
+  // 這裡邏輯微調：如果是 referral，已經有很強的警告了，安撫反而重要；如果是 great 但焦慮高，更需要安撫。
+  const showAnxietyComfort = feedback && feedback.anxietyScore >= 7;
 
   const handleRestart = () => {
     if (resetAssessment) resetAssessment();
@@ -183,7 +183,7 @@ const ResultsScreen: React.FC = () => {
             <div>
               <p className="text-xs font-bold text-slate-500 mb-1">給親愛的爸媽：</p>
               <p className="text-sm text-slate-700 font-medium leading-relaxed">
-                辛苦了，我們理解您的擔憂。請放心，這個測驗只是起點，讓專業醫療團隊來分擔您的重擔，我們都在。
+                照顧孩子不容易，您的焦慮我們都懂。請記得，篩檢只是工具，用輕鬆的心情陪伴孩子成長才是最重要的喔。
               </p>
             </div>
           </div>
@@ -197,7 +197,7 @@ const ResultsScreen: React.FC = () => {
                <div className="text-7xl drop-shadow-md animate-bounce-slow filter brightness-110">
                  {supportTheme.bearEmoji}
                </div>
-               {overallStatus !== 'normal' && (
+               {overallStatus === 'referral' && (
                  <div className="absolute -right-2 -bottom-2 bg-white text-xs font-bold px-2 py-1 rounded-full shadow-sm border border-slate-100 text-slate-600 whitespace-nowrap">
                    醫生陪你 💪
                  </div>
@@ -207,7 +207,6 @@ const ResultsScreen: React.FC = () => {
             <p className="text-slate-600 text-sm font-medium leading-relaxed opacity-90">{supportTheme.description}</p>
           </div>
           <div className="p-6 bg-white">
-            {/* 使用明確的 class name，不再使用 replace */}
             <div className={`rounded-xl p-5 border-l-4 ${supportTheme.bgStrong} ${supportTheme.border.replace('border-', 'border-l-')}`}>
               <h3 className={`text-sm font-black mb-2 flex items-center gap-2 ${supportTheme.text}`}>
                 <span className="text-lg">{supportTheme.icon}</span>
@@ -218,12 +217,13 @@ const ResultsScreen: React.FC = () => {
           </div>
         </div>
 
-        {/* 評估詳情 (App畫面) - 直接使用 resolvedDomains */}
+        {/* 評估詳情 (App畫面) */}
         <div className="mt-8 space-y-4">
           <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest ml-2 flex items-center gap-2"><span>📊</span> 各面向評估詳情</h3>
           <div className="grid grid-cols-1 gap-3">
             {resolvedDomains.map((item, index) => {
-              // 樣式邏輯保持不變，但數據來源更乾淨
+              // 樣式邏輯：Fail 為紅，Pass 為綠，Max 為金(可選)或綠
+              // 這裡簡單化：Fail 為紅，其他為預設白底
               let cardStyle = item.isPass ? 'bg-white border-slate-100 shadow-sm' : 'bg-rose-50/50 border-rose-100 shadow-inner';
               if (item.hasDoctorAssessment) cardStyle = 'bg-indigo-50/50 border-indigo-100 shadow-sm';
 
@@ -255,7 +255,11 @@ const ResultsScreen: React.FC = () => {
                          item.hasDoctorAssessment ? 'text-indigo-600' : item.isPass ? 'text-emerald-600' : 'text-rose-500'
                        }`}>
                           {item.hasDoctorAssessment ? (<><StethoscopeIcon className="w-3 h-3" /><span>待評估</span></>) : 
-                           item.isPass ? (<><CheckIcon className="w-3 h-3" /><span>達標</span></>) : 
+                           item.isPass ? (
+                             item.status === 'max' ? 
+                             (<><span className="text-amber-500 text-[10px]">★</span><span>滿分</span></>) : 
+                             (<><CheckIcon className="w-3 h-3" /><span>及格</span></>)
+                           ) : 
                            (<><AlertCircleIcon className="w-3 h-3" /><span>需留意</span></>)}
                        </div>
                     </div>
@@ -295,13 +299,18 @@ const ResultsScreen: React.FC = () => {
               <tr className="bg-slate-100"><th className="p-3 text-left border border-slate-300 w-1/3">發展面向</th><th className="p-3 text-center border border-slate-300 w-1/4">得分 / 滿分</th><th className="p-3 text-center border border-slate-300 w-1/4">及格標準</th><th className="p-3 text-center border border-slate-300 w-1/6">狀態</th></tr>
             </thead>
             <tbody>
-              {/* ✨ 這裡也直接使用 resolvedDomains，保證與 App 畫面數據來源完全一致 */}
               {resolvedDomains.map((item) => (
                 <tr key={item.key}>
                   <td className="p-3 border border-slate-300 font-bold text-slate-700">{item.name}</td>
                   <td className="p-3 border border-slate-300 text-center font-mono font-bold text-slate-800">{item.score} <span className="text-slate-400 text-xs">/ {item.maxScore}</span></td>
                   <td className="p-3 border border-slate-300 text-center text-slate-500 font-medium">≥ {item.cutoff}</td>
-                  <td className={`p-3 border border-slate-300 text-center font-bold ${item.hasDoctorAssessment ? 'text-indigo-600 bg-indigo-50' : item.isPass ? 'text-emerald-600 bg-emerald-50' : 'text-rose-600 bg-rose-50'}`}>{item.hasDoctorAssessment ? '醫師評估' : item.isPass ? '通過' : '需追蹤'}</td>
+                  <td className={`p-3 border border-slate-300 text-center font-bold ${
+                    item.hasDoctorAssessment ? 'text-indigo-600 bg-indigo-50' : 
+                    !item.isPass ? 'text-rose-600 bg-rose-50' :
+                    item.status === 'max' ? 'text-amber-600 bg-amber-50' : 'text-emerald-600 bg-emerald-50'
+                  }`}>
+                    {item.hasDoctorAssessment ? '醫師評估' : !item.isPass ? '需追蹤' : item.status === 'max' ? '滿分' : '通過'}
+                  </td>
                 </tr>
               ))}
             </tbody>

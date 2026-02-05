@@ -27,7 +27,8 @@ const getMonthsDiff = (d1: Date, d2: Date) => {
  */
 const getDaysDiff = (d1: Date, d2: Date) => {
   const diffTime = Math.abs(d1.getTime() - d2.getTime());
-  return Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+  // 使用 floor 取代 ceil，避免將 0.5 天算作 1 天
+  return Math.floor(diffTime / (1000 * 60 * 60 * 24)); 
 };
 
 /**
@@ -55,6 +56,7 @@ export const calculateAge = (
   let isCorrected = false;
 
   // 早產且小於 24 個月 (2歲) 需進行矯正
+  // 4-5歲篩檢已超過24個月，因此不會觸發此邏輯，這是正確的
   if (isPremature && chronoMonths < 24) {
     const weeksToCorrect = 40 - gestationalWeeks;
     calculationDate = addDaysToDate(birthDate, weeksToCorrect * 7);
@@ -91,7 +93,6 @@ export const calculateAge = (
     ageGroupKey = '12-15m';
     ageGroupDisplay = '12個月 - 15個月';
   } else if (totalMonths >= 15 && totalMonths < 18) {
-    // ✅ 15-18個月判斷區塊 (已確認邏輯正確)
     ageGroupKey = '15-18m';
     ageGroupDisplay = '15個月 - 18個月';
   } else if (totalMonths >= 18 && totalMonths < 24) {
@@ -104,9 +105,13 @@ export const calculateAge = (
     ageGroupKey = '3-4y';
     ageGroupDisplay = '3歲 - 4歲';
   } else if (totalMonths >= 48 && totalMonths < 60) {
+    // ✅ 4-5歲判斷區塊 (已確認)
+    // 對應 PDF 量表八：4歲至未滿5歲
     ageGroupKey = '4-5y';
     ageGroupDisplay = '4歲 - 5歲';
   } else if (totalMonths >= 60 && totalMonths < 84) {
+    // ✅ 5-7歲判斷區塊 (已確認)
+    // 對應 PDF 量表九：5歲至未滿7歲 (PDF [cite: 564, 611])
     ageGroupKey = '5-7y';
     ageGroupDisplay = '5歲 - 7歲';
   }

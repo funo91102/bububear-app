@@ -15,7 +15,6 @@ interface ToolItem {
 // --- 定義道具清單 (依據標準規格更新) ---
 
 // 1. 嬰兒組 (6個月 - 1歲)
-// 適用：6-9m, 9-12m
 const infantTools: ToolItem[] = [
   { title: '搖鈴', desc: '1個，測試聽力與追視反應。' },
   { title: '積木或小玩具', desc: '2-4 塊，約 2-3 公分，測試抓握與敲打。' },
@@ -24,7 +23,6 @@ const infantTools: ToolItem[] = [
 ];
 
 // 2. 學步兒組 (1歲 - 1歲半)
-// 適用：12-15m, 15-18m
 const earlyToddlerTools: ToolItem[] = [
   { title: '蠟筆與圖畫紙', desc: '1組，測試塗鴉動作 (15-18m 必備)。' },
   { title: '湯匙', desc: '1支，測試抓握與生活自理 (15-18m 必備)。' },
@@ -33,13 +31,12 @@ const earlyToddlerTools: ToolItem[] = [
   { title: '貼紙或小葡萄乾', desc: '數個，測試手指精細捏取動作。' },
 ];
 
-// 3. ✨ 18-24個月 專屬教具 (依照量表五 & 教具規格)
-// 適用：18-24m
+// 3. 18-24個月
 const tools18to24m: ToolItem[] = [
   { 
     title: '圖卡 1 (認知/語言)', 
     desc: '包含：湯匙、小狗、汽車、皮球。', 
-    image: '/assets/card1_spoon.png', // 使用您提供的資源截圖
+    image: '/assets/card1_spoon.png', 
     badge: 'App 內建'
   },
   { title: '積木', desc: '建議準備 8 塊，測試堆疊高度 (至少疊 2 塊)。' },
@@ -48,13 +45,12 @@ const tools18to24m: ToolItem[] = [
   { title: '(選備) 形狀筒', desc: '含圓形、三角形、正方形，測試配對。' },
 ];
 
-// 4. 幼兒組 (2歲 - 3歲)
-// 適用：2-3y
+// 4. 2-3歲
 const tools2to3y: ToolItem[] = [
   { 
     title: '圖卡 2 (動作指認)', 
     desc: '包含：洗手、踢球、喝水、拍手。',
-    image: '/assets/card2_kick.png', // 若未來加入可對應
+    image: '/assets/card2_kick.png',
     badge: 'App 內建'
   },
   { title: '積木', desc: '建議準備 8 塊，測試堆疊高度 (至少疊 4 塊)。' },
@@ -64,12 +60,40 @@ const tools2to3y: ToolItem[] = [
   { title: '球', desc: '1顆，網球大小，測試丟球與跳躍。' },
 ];
 
-// 5. 學齡前組 (3歲以上 - 暫定)
+// 5. 3-4歲 (量表七)
+const tools3to4y: ToolItem[] = [
+  { 
+    title: '圖卡 3 (大小比較)', 
+    desc: '畫面會有兩顆大小不同的球。', 
+    image: '/assets/card3_combined.png',
+    badge: 'App 內建'
+  },
+  { title: '積木', desc: '建議準備 8 塊，仿疊「品」或「田」字形。' },
+  { title: '安全剪刀與紙', desc: '測試使用剪刀沿線剪紙。⚠️ 家長請全程看顧。' },
+  { title: '筆與圖畫紙', desc: '測試模仿畫圓形。' },
+  { title: '硬幣', desc: '3 枚 (10元硬幣大小)，測試單手掌內操作。' },
+];
+
+// 6. 4-5歲 (量表八 - 本次新增 ✅)
+const tools4to5y: ToolItem[] = [
+  { 
+    title: '圖卡 4-8', 
+    desc: '包含形狀仿畫圖卡及故事圖卡。', 
+    image: '/assets/card5_story.png',
+    badge: 'App 內建'
+  },
+  { title: '安全剪刀', desc: '測試連續剪紙。請在紙上畫一條 10cm 直線。' },
+  { title: '色紙或薄紙', desc: '測試摺紙與壓痕動作。' },
+  { title: '筆與圖畫紙', desc: '測試仿畫十字或方形。' },
+  { title: '小球', desc: '紅、黃、藍、綠各 1 顆 (或可用圖卡替代)。' },
+];
+
+// 7. 5歲以上 (暫定)
 const preschoolTools: ToolItem[] = [
   { title: '圖卡 3-9', desc: '依據年齡使用對應圖卡。', badge: 'App 內建' },
   { title: '積木', desc: '測試堆疊與模仿結構。' },
-  { title: '剪刀與紙', desc: '測試使用剪刀能力 (4歲以上)。' },
-  { title: '球', desc: '測試單手丟球與接球。' },
+  { title: '剪刀與紙', desc: '測試使用剪刀能力。' },
+  { title: '硬幣', desc: '測試掌內操作 (3枚)。' },
 ];
 
 const ToolPreparationScreen: React.FC = () => {
@@ -98,13 +122,15 @@ const ToolPreparationScreen: React.FC = () => {
     // 2. 學步兒前期
     if (earlyToddlerKeys.includes(ageGroupKey)) return earlyToddlerTools;
 
-    // 3. 學步兒後期 (本次新增重點 ✅)
+    // 3. 學步兒後期
     if (ageGroupKey === '18-24m') return tools18to24m;
 
     // 4. 幼兒期
     if (ageGroupKey === '2-3y') return tools2to3y;
+    if (ageGroupKey === '3-4y') return tools3to4y;
+    if (ageGroupKey === '4-5y') return tools4to5y; // ✅ 新增判定
 
-    // 5. 其他 (3歲以上)
+    // 5. 其他 (5歲以上)
     return preschoolTools;
   }, [childProfile]);
 

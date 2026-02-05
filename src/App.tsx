@@ -1,4 +1,4 @@
-import { useState } from 'react'; // ✅ 修正1: 加入 React 解決 TS2686 錯誤
+import React, { useState } from 'react'; // ✅ 修正1: Explicitly import React to fix TS2686
 import { AssessmentProvider, useAssessment } from './context/AssessmentContext';
 import AssessmentScreen from './components/AssessmentScreen';
 import ResultsScreen from './components/ResultsScreen';
@@ -8,8 +8,8 @@ import { calculateAge } from './utils/ageCalculator';
 import { PlayIcon, ChevronLeftIcon } from './components/Icons';
 import './index.css';
 
-// ✅ 修正2: 務必確認這裡有 '18-24m'，否則按鈕會被鎖住
-const supportedAgeGroups = ['6-9m', '9-12m', '12-15m', '15-18m', '18-24m', '2-3y'];
+// ✅ 修正2: 加入 '3-4y' 與 '4-5y' 至白名單
+const supportedAgeGroups = ['6-9m', '9-12m', '12-15m', '15-18m', '18-24m', '2-3y', '3-4y', '4-5y'];
 
 // --- 內部元件 1: 確認資訊頁面 ---
 const ConfirmationScreen = () => {
@@ -70,7 +70,8 @@ const ConfirmationScreen = () => {
                  ) : (
                    <div className="text-amber-600/80 flex flex-col items-center">
                      <span>🚧 此階段題庫建置中</span>
-                     <span className="font-normal opacity-80 mt-1">目前開放：6m-18m, 18-24m, 2-3y</span>
+                     {/* ✅ 修正3: 更新 UI 顯示的支援列表 */}
+                     <span className="font-normal opacity-80 mt-1">目前開放：6m ~ 5y</span>
                    </div>
                  )}
                </div>
