@@ -96,6 +96,7 @@ export interface Feedback {
 export interface AssessmentResult {
   domainScores: Record<DomainKey, number>;
   domainStatuses: Record<DomainKey, AssessmentStatus>;
-  overallStatus: 'normal' | 'follow_up' | 'referral';
+  // ✅ 新增 'great' 到聯合型別中
+  overallStatus: 'normal' | 'follow_up' | 'referral' | 'great'; 
   totalScore: number; 
 }
