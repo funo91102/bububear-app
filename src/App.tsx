@@ -4,7 +4,8 @@ import { AssessmentProvider, useAssessment } from './context/AssessmentContext';
 import AssessmentScreen from './components/AssessmentScreen';
 import ResultsScreen from './components/ResultsScreen';
 import ToolPreparationScreen from './components/ToolPreparationScreen';
-import FeedbackScreen from './components/FeedbackScreen'; 
+import FeedbackScreen from './components/FeedbackScreen';
+import DisclaimerModal from './components/DisclaimerModal'; // 新增：免責聲明彈窗
 import { calculateAge } from './utils/ageCalculator';
 import { PlayIcon, ChevronLeftIcon, AlertCircleIcon } from './components/Icons';
 import type { AgeGroupKey } from './types'; 
@@ -116,7 +117,7 @@ const ConfirmationScreen: FC = () => {
   );
 };
 
-// --- 內部元件 2: 歡迎畫面 ---
+// --- 內部元件 2: 歡迎畫面（新增免責聲明邏輯） ---
 const WelcomeScreen: FC = () => {
   const { setScreen, setChildProfile } = useAssessment();
   const [nickname, setNickname] = useState('');
@@ -124,6 +125,18 @@ const WelcomeScreen: FC = () => {
   const [isPremature, setIsPremature] = useState(false);
   const [gestationalWeeks, setGestationalWeeks] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  
+  // 新增：免責聲明狀態管理
+  const [showDisclaimer, setShowDisclaimer] = useState(false);
+  const [hasAcceptedDisclaimer, setHasAcceptedDisclaimer] = useState(false);
+
+  // 新增：檢查是否已經同意過免責聲明
+  useEffect(() => {
+    const accepted = localStorage.getItem('bububear_disclaimer_accepted');
+    if (accepted === 'true') {
+      setHasAcceptedDisclaimer(true);
+    }
+  }, []);
 
   const handleStart = () => {
     const error = validateProfileData(nickname, birthDate, isPremature, gestationalWeeks);
@@ -131,16 +144,41 @@ const WelcomeScreen: FC = () => {
       setErrorMsg(error);
       return;
     }
+    
+    // 新增：如果還沒同意免責聲明，先顯示彈窗
+    if (!hasAcceptedDisclaimer) {
+      setShowDisclaimer(true);
+      return;
+    }
+    
+    // 原有邏輯：繼續到下一步
+    proceedToConfirmation();
+  };
+
+  // 新增：同意免責聲明後的處理
+  const handleAcceptDisclaimer = () => {
+    localStorage.setItem('bububear_disclaimer_accepted', 'true');
+    setHasAcceptedDisclaimer(true);
+    setShowDisclaimer(false);
+    // 繼續到下一步
+    proceedToConfirmation();
+  };
+
+  // 新增：提取原有的下一步邏輯
+  const proceedToConfirmation = () => {
     setErrorMsg(null);
     let finalGestationalAge = isPremature ? parseInt(gestationalWeeks) : 40;
     if (finalGestationalAge >= 37) finalGestationalAge = 40;
     
     setChildProfile({ nickname, birthDate, gestationalAge: finalGestationalAge });
-    setScreen('confirmation'); 
+    setScreen('confirmation');
   };
 
   return (
     <div className="min-h-screen bg-sky-50 flex flex-col items-center justify-center p-6 relative">
+      {/* 新增：免責聲明彈窗 */}
+      {showDisclaimer && <DisclaimerModal onAccept={handleAcceptDisclaimer} />}
+
       <div className="bg-white/90 backdrop-blur-sm p-8 rounded-3xl shadow-xl w-full max-w-sm border border-white/50 z-10">
         <div className="text-center mb-6">
           <div className="w-20 h-20 bg-gradient-to-tr from-slate-600 to-slate-800 rounded-full mx-auto flex items-center justify-center shadow-lg mb-4 border-4 border-white">

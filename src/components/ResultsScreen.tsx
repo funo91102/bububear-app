@@ -4,6 +4,7 @@ import { calculateAge } from '../utils/ageCalculator';
 import { screeningData } from '../constants/screeningData';
 import { getDomainMaxScore } from '../utils/screeningEngine';
 import { CheckIcon, AlertCircleIcon, RefreshIcon, HeartIcon, DownloadIcon, StethoscopeIcon } from './Icons';
+import ResultWarning from './ResultWarning'; // 新增：引入警示元件
 import type { DomainKey, AgeGroupKey } from '../types';
 import html2canvas from 'html2canvas';
 
@@ -218,8 +219,13 @@ const ResultsScreen: React.FC = () => {
           </div>
         </div>
 
+        {/* 新增：警示說明區塊（在評估詳情之前） */}
+        <div className="mt-8">
+          <ResultWarning />
+        </div>
+
         {/* 評估詳情 (App畫面) */}
-        <div className="mt-8 space-y-4">
+        <div className="mt-6 space-y-4">
           <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest ml-2 flex items-center gap-2"><span>📊</span> 各面向評估詳情</h3>
           <div className="grid grid-cols-1 gap-3">
             {resolvedDomains.map((item, index) => {
@@ -277,12 +283,12 @@ const ResultsScreen: React.FC = () => {
             {isExporting ? <span className="animate-pulse">製作報告中...</span> : <><DownloadIcon className="w-5 h-5" /><span>儲存評估結果 (給醫師看)</span></>}
           </button>
           
-          {/* ✅ 僅保留最核心的免責聲明 */}
-          <div className="text-center py-2 px-4">
-             <p className="text-rose-500 text-[11px] font-bold">
-               測試結果僅供參考，請與您的兒科醫師進行正式評估！
-             </p>
-          </div>
+         {/* ✅ 底部提醒（簡短版） */}
+        <div className="text-center py-2 px-4">
+           <p className="text-slate-400 text-[10px] font-medium">
+              本工具依據衛福部兒童發展連續篩檢量表設計
+          </p>
+        </div>
 
           <button onClick={handleRestart} className="w-full py-4 bg-white border-2 border-slate-100 text-slate-500 hover:bg-slate-50 hover:text-slate-700 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 active:scale-95">
             <RefreshIcon className="w-4 h-4" /> 返回首頁重新測驗
