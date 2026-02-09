@@ -1,13 +1,108 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { ChevronLeftIcon, ChevronRightIcon } from './Icons';
 import type { FlashcardOption } from '../types/index';
 
 // ✨ 定義嚴格的 Props (Discriminated Union)
 type FlashcardProps = 
   | { mode: 'single'; src: string }               // 單圖模式：必須有 src
-  | { mode: 'multi'; options: FlashcardOption[] }; // 多圖模式：必須有 options
+  | { mode: 'multi'; options: FlashcardOption[] } // 多圖模式：必須有 options
+  | { mode: 'carousel'; images: string[] };       // 新增：輪播模式（圖卡 5-8）
 
 export const Flashcard: React.FC<FlashcardProps> = (props) => {
   
+  // ==================== 新增：輪播模式 ====================
+  if (props.mode === 'carousel') {
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const totalImages = props.images.length;
+
+    // 下一張（循環）
+    const handleNext = () => {
+      setCurrentIndex((prev) => (prev + 1) % totalImages);
+    };
+
+    // 上一張（循環）
+    const handlePrev = () => {
+      setCurrentIndex((prev) => (prev - 1 + totalImages) % totalImages);
+    };
+
+    // 點擊圖片 = 下一張（您要求的功能）
+    const handleImageClick = () => {
+      handleNext();
+    };
+
+    return (
+      <div className="w-full h-full flex flex-col items-center justify-center p-2">
+        {/* 主圖區域（可點擊） */}
+        <div className="relative w-full h-full flex items-center justify-center bg-white rounded-2xl overflow-hidden min-h-[200px] mb-3">
+          <img 
+            src={props.images[currentIndex]} 
+            alt={`圖卡 ${currentIndex + 1}`}
+            onClick={handleImageClick}
+            className="max-w-full max-h-full object-contain drop-shadow-md cursor-pointer transition-transform active:scale-95" 
+            onError={(e) => {
+              console.error(`輪播圖片載入失敗: ${props.images[currentIndex]}`);
+              e.currentTarget.style.display = 'none'; 
+            }}
+          />
+          
+          {/* 左箭頭按鈕 */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation(); // 避免觸發圖片點擊
+              handlePrev();
+            }}
+            className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 hover:bg-white rounded-full shadow-lg flex items-center justify-center text-slate-700 hover:text-slate-900 transition-all active:scale-90 border border-slate-200"
+            aria-label="上一張"
+          >
+            <ChevronLeftIcon className="w-5 h-5" />
+          </button>
+
+          {/* 右箭頭按鈕 */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleNext();
+            }}
+            className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 hover:bg-white rounded-full shadow-lg flex items-center justify-center text-slate-700 hover:text-slate-900 transition-all active:scale-90 border border-slate-200"
+            aria-label="下一張"
+          >
+            <ChevronRightIcon className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* 指示器區域 */}
+        <div className="flex items-center gap-3 bg-slate-50 px-4 py-2 rounded-full border border-slate-200">
+          {/* 圓點指示器 */}
+          <div className="flex items-center gap-1.5">
+            {props.images.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => setCurrentIndex(index)}
+                className={`transition-all duration-200 ${
+                  index === currentIndex 
+                    ? 'w-6 h-2 bg-sky-500 rounded-full' 
+                    : 'w-2 h-2 bg-slate-300 hover:bg-slate-400 rounded-full'
+                }`}
+                aria-label={`跳到第 ${index + 1} 張`}
+              />
+            ))}
+          </div>
+
+          {/* 數字指示器 */}
+          <div className="text-xs font-bold text-slate-600">
+            {currentIndex + 1} / {totalImages}
+          </div>
+        </div>
+
+        {/* 提示文字 */}
+        <p className="text-[10px] text-slate-400 mt-2 font-medium">
+          點擊圖片或使用左右箭頭切換
+        </p>
+      </div>
+    );
+  }
+  // ==================== 輪播模式結束 ====================
+
   // 模式 1: 四格選項圖卡 (Multi) - 18-24m, 2-3y 常用
   // 修正重點：移除 aspect-square，改用 min-h 與固定圖片大小，避免圖片塌陷
   if (props.mode === 'multi') {

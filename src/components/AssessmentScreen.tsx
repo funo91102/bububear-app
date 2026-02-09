@@ -7,7 +7,7 @@ import { isAgeGroupImplemented, getImplementedAgeGroups } from '../utils/screeni
 import { CheckIcon, XMarkIcon, AlertIcon, AlertCircleIcon, StethoscopeIcon } from './Icons'; 
 // ✅ 修正 1：改用重構後的新型別名稱 StandardAnswerStatus
 import type { StandardAnswerStatus } from '../types';
-// ✅ 從外部匯入 Flashcard 元件 (支援單圖/多圖模式)
+// ✅ 從外部匯入 Flashcard 元件 (支援單圖/多圖/輪播模式)
 import { Flashcard } from './Flashcard';
 
 const AssessmentScreen: React.FC = () => {
@@ -155,6 +155,14 @@ const AssessmentScreen: React.FC = () => {
               <Flashcard 
                 mode="multi" 
                 options={currentQuestion.flashcardOptions || []} 
+              />
+            )}
+
+            {/* ✅ 新增：輪播模式（圖卡 5-8，4-5y 和 5-7y 量表） */}
+            {currentQuestion.kind === 'carousel' && (
+              <Flashcard 
+                mode="carousel" 
+                images={currentQuestion.carouselImages || []} 
               />
             )}
 

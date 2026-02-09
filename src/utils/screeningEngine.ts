@@ -100,6 +100,8 @@ export const calculateAssessmentResult = (
 
   let totalScore = 0;
   let failCount = 0;
+  let maxCount = 0;  // 🆕 新增：計算有幾個面向是滿分
+  let validDomainCount = 0;  // 🆕 新增：計算有效面向數量（排除空殼）
 
   // 遍歷四個領域進行計算
   const domains: DomainKey[] = ['gross_motor', 'fine_motor', 'cognitive_language', 'social'];
@@ -114,9 +116,12 @@ export const calculateAssessmentResult = (
 
     if (maxScore === 0) {
       // 若滿分為 0，代表此年齡層無此面向 (或已合併)，直接跳過計算
-      // 狀態維持預設的 'pass'，且不計入 failCount
+      // 狀態維持預設的 'pass'，且不計入 failCount 和 validDomainCount
       return; 
     }
+
+    // 🆕 修正：只計算有題目的面向
+    validDomainCount++;
 
     let currentScore = 0;
     
@@ -135,24 +140,44 @@ export const calculateAssessmentResult = (
     // 若得分 >= 切截點 (Cutoff)，則通過
     if (currentScore >= domain.cutoff) {
       // 進一步判斷是否滿分 (顯示星星或MAX)
-      domainStatuses[domainKey] = (currentScore === maxScore) ? 'max' : 'pass';
+      if (currentScore === maxScore) {
+        domainStatuses[domainKey] = 'max';
+        maxCount++;  // 🆕 新增：計數滿分面向
+      } else {
+        domainStatuses[domainKey] = 'pass';
+      }
     } else {
       domainStatuses[domainKey] = 'fail';
       failCount++; // 只有真正存在的面向未達標，才計入失敗
     }
   });
 
-  // 3. 決定總體狀態 (Overall Status)邏輯
-  let overallStatus: 'normal' | 'follow_up' | 'referral' = 'normal';
+  // 3. 決定總體狀態 (Overall Status) 邏輯
+  // 🆕 修正：優先順序調整，先判斷是否有未達標
+  let overallStatus: 'normal' | 'follow_up' | 'referral' | 'great' = 'normal';
 
-  if (failCount === 0) {
-    overallStatus = 'normal';
+  // 🔧 優先判斷：是否有面向未達標？（最重要）
+  if (failCount >= 2) {
+    overallStatus = 'referral';  // 兩個或以上領域未達標 → 建議轉介
   } else if (failCount === 1) {
-    overallStatus = 'follow_up'; // 只有一個領域未達標 -> 需追蹤
-  } else {
-    overallStatus = 'referral';  // 兩個或以上領域未達標 -> 建議轉介
+    overallStatus = 'follow_up';  // 只有一個領域未達標 → 需追蹤
+  }
+  // 🔧 其次判斷：沒有未達標的情況下，是否全部滿分？
+  else if (validDomainCount > 0 && maxCount === validDomainCount) {
+    overallStatus = 'great';  // 所有有效面向都滿分 → 太棒了！
+  }
+  // 🔧 最後：全部及格但非全滿分
+  else {
+    overallStatus = 'normal';  // 全部及格但非全部滿分 → 如期達標
   }
 
+  console.log('🔍 Debug:', {
+    failCount,
+    maxCount, 
+    validDomainCount,
+    overallStatus
+  });
+  
   return {
     domainScores,
     domainStatuses,

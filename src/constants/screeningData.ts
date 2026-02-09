@@ -838,12 +838,12 @@ export const screeningData: ScreeningData = {
           id: 'CL-4-5y-Q2', type: '實', weight: 2,
           text: '★ (圖卡5-8) 可以用完整句子敘述故事情節？',
           description: '請孩子看圖描述圖卡內容。標準：1. 完整句子(4-5詞彙) 2. 語法正確 3. 使用連接詞(因為/所以/然後)。',
-          kind: 'multi_image',
-          flashcardOptions: [
-            { label: '圖卡 5', imageSrc: '/assets/card5_story.png', bgColor: 'bg-white' },
-            { label: '圖卡 6', imageSrc: '/assets/card6_story.png', bgColor: 'bg-white' },
-            { label: '圖卡 7', imageSrc: '/assets/card7_story.png', bgColor: 'bg-white' },
-            { label: '圖卡 8', imageSrc: '/assets/card8_story.png', bgColor: 'bg-white' }
+          kind: 'carousel',  // ✅ 改成輪播
+          carouselImages: [  // ✅ 使用圖片陣列
+            '/assets/card5_story.png',
+            '/assets/card6_story.png',
+            '/assets/card7_story.png',
+            '/assets/card8_story.png'
           ]
         },
         {
@@ -963,12 +963,12 @@ export const screeningData: ScreeningData = {
           id: 'CL-5-7y-Q1', type: '實', weight: 2,
           text: '★ (圖卡5-8) 可以用完整句子敘述故事情節？',
           description: '需符合：1.完整句子(4-5詞彙) 2.語法正確 3.有連接詞 4.一問一答至少3次。',
-          kind: 'multi_image',
-          flashcardOptions: [
-            { label: '圖卡 5', imageSrc: '/assets/card5_story.png', bgColor: 'bg-white' },
-            { label: '圖卡 6', imageSrc: '/assets/card6_story.png', bgColor: 'bg-white' },
-            { label: '圖卡 7', imageSrc: '/assets/card7_story.png', bgColor: 'bg-white' },
-            { label: '圖卡 8', imageSrc: '/assets/card8_story.png', bgColor: 'bg-white' }
+          kind: 'carousel',  // ✅ 改成輪播
+          carouselImages: [  // ✅ 使用圖片陣列
+            '/assets/card5_story.png',
+            '/assets/card6_story.png',
+            '/assets/card7_story.png',
+            '/assets/card8_story.png'
           ]
         },
         {

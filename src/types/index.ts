@@ -19,7 +19,8 @@ export interface ChildProfile {
  */
 export type QuestionType = '實' | '問' | '實/問' | 'observation' | 'interview' | 'mixed';
 
-export type QuestionKind = 'emoji' | 'image' | 'single_image' | 'multi_image';
+// ✅ 修正：加入 'carousel' 到 QuestionKind
+export type QuestionKind = 'emoji' | 'image' | 'single_image' | 'multi_image' | 'carousel';
 
 export interface FlashcardOption {
   label: string;
@@ -39,7 +40,8 @@ export interface Question {
   emoji?: string;                        
   imageSrc?: string;                     
   flashcardImageSrc?: string;            
-  flashcardOptions?: FlashcardOption[];  
+  flashcardOptions?: FlashcardOption[];
+  carouselImages?: string[];  // ✅ 新增：輪播模式使用的圖片陣列（圖卡 5-8）
 }
 
 /**
