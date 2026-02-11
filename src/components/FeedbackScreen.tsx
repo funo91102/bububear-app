@@ -1,156 +1,205 @@
 import React, { useState } from 'react';
 import { useAssessment } from '../context/AssessmentContext';
-import { CheckIcon } from './Icons'; 
-import { calculateAge } from '../utils/ageCalculator'; 
-// ✅ 修正 1: 引入核心計分引擎
-import { calculateAssessmentResult } from '../utils/screeningEngine';
+import { PlayIcon } from './Icons';
+
+// 改善建議選項
+const IMPROVEMENT_OPTIONS = [
+  { id: 'image_small', label: '圖片/圖卡太小，看不清楚' },
+  { id: 'text_unclear', label: '文字說明不夠清楚' },
+  { id: 'operation_confused', label: '不知道怎麼操作' },
+  { id: 'need_video', label: '需要影片示範' },
+  { id: 'other', label: '其他問題' }
+];
 
 const FeedbackScreen: React.FC = () => {
-  const { 
-    setFeedback, 
-    setScreen, 
-    childProfile, 
-    answers, 
-    setAssessmentResult 
-  } = useAssessment();
+  const { setScreen, setFeedback, childProfile } = useAssessment();
   
   const [anxietyScore, setAnxietyScore] = useState(5);
   const [notes, setNotes] = useState('');
-  // ✅ 建議 3: 新增處理中狀態，防止連點
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedImprovement, setSelectedImprovement] = useState('');
+  const [otherSuggestion, setOtherSuggestion] = useState('');
 
-  const handleSubmit = async () => {
-    // 防止重複提交
-    if (isSubmitting) return;
-    
-    // 1. 基礎防呆 (Guard Clause)
-    if (!childProfile) {
-      console.error("錯誤：找不到兒童資料");
-      return;
-    }
-
-    setIsSubmitting(true);
-
+  // 傳送回饋到 n8n
+  const sendFeedbackToN8n = async (feedbackData: any) => {
     try {
-      // 2. 儲存家長回饋
-      setFeedback({
-        anxietyScore,
-        notes
-      });
-
-      // ✅ 建議 2: 集中時間基準點 (方便未來測試或重播)
-      const now = new Date();
-
-      const { ageGroupKey } = calculateAge(
-        childProfile.birthDate, 
-        now, 
-        childProfile.gestationalAge
-      );
-
-      // ✅ 建議 1: 使用 Guard Clause 降低巢狀層級
-      if (!ageGroupKey) {
-        console.error("錯誤：無效的年齡層 Key");
-        alert("無法判定適用年齡層，請檢查生日資料。");
-        setIsSubmitting(false); // 發生錯誤要解鎖按鈕
+      // 檢查是否有設定 n8n webhook URL
+      const webhookUrl = (import.meta as any).env?.VITE_N8N_FEEDBACK_WEBHOOK;
+      
+      if (!webhookUrl) {
         return;
       }
 
-      // 3. 執行核心計算
-      // 這裡可以視情況加入微小的 delay 讓使用者感覺到「分析中」(非必要，但有助於轉場體驗)
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // 從 childProfile 取得年齡資訊
+      let ageGroup = 'unknown';
+      if (childProfile?.birthDate) {
+        const birthDate = new Date(childProfile.birthDate);
+        const today = new Date();
+        const months = (today.getFullYear() - birthDate.getFullYear()) * 12 + 
+                       (today.getMonth() - birthDate.getMonth());
+        
+        if (months < 9) ageGroup = '6-9m';
+        else if (months < 12) ageGroup = '9-12m';
+        else if (months < 15) ageGroup = '12-15m';
+        else if (months < 18) ageGroup = '15-18m';
+        else if (months < 24) ageGroup = '18-24m';
+        else if (months < 36) ageGroup = '2-3y';
+        else if (months < 48) ageGroup = '3-4y';
+        else if (months < 60) ageGroup = '4-5y';
+        else ageGroup = '5-7y';
+      }
 
-      const results = calculateAssessmentResult(ageGroupKey, answers);
-      
-      setAssessmentResult(results); 
-      setScreen('results'); 
-      
+      // 準備傳送的數據（完全匿名）
+      const payload = {
+        timestamp: new Date().toISOString(),
+        ageGroup: ageGroup,
+        anxietyScore: feedbackData.anxietyScore,
+        hasNotes: !!feedbackData.notes,
+        improvement: feedbackData.improvement,
+        otherSuggestion: feedbackData.otherSuggestion
+      };
+
+      await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
     } catch (error) {
-      console.error("計分引擎錯誤:", error);
-      alert("系統發生錯誤，無法計算結果，請稍後再試。");
-      setIsSubmitting(false); // 發生錯誤要解鎖按鈕
+      // 靜默處理錯誤，不影響使用者體驗
+      console.error('回饋傳送失敗:', error);
     }
   };
 
+  const handleSubmit = () => {
+    const feedbackData = {
+      anxietyScore,
+      notes,
+      improvement: selectedImprovement,
+      otherSuggestion
+    };
+    
+    // 設定回饋資料
+    setFeedback(feedbackData);
+
+    // 傳送到 n8n（背景執行，不阻擋）
+    sendFeedbackToN8n(feedbackData).catch(() => {
+      // 靜默處理錯誤
+    });
+    
+    // 進入結果頁面
+    setScreen('results');
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 relative overflow-hidden">
-      <div className="w-full max-w-md bg-white rounded-[2.5rem] shadow-xl border border-slate-100 overflow-hidden relative z-10">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 flex flex-col items-center justify-center p-6 relative overflow-hidden">
+      
+      {/* 背景裝飾 */}
+      <div className="absolute top-10 left-10 w-32 h-32 bg-purple-200/30 rounded-full blur-3xl animate-pulse"></div>
+      <div className="absolute bottom-20 right-10 w-40 h-40 bg-pink-200/30 rounded-full blur-3xl animate-pulse delay-1000"></div>
+
+      <div className="relative z-10 w-full max-w-lg">
         
-        <div className="bg-sky-50/80 p-8 text-center border-b border-sky-100 backdrop-blur-sm">
-          <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm text-4xl border-4 border-white">
-            🧸
-          </div>
-          <h2 className="text-2xl font-black text-slate-800 mb-2">最後一哩路！</h2>
-          <p className="text-slate-600 font-medium text-sm">
-            謝謝您耐心地陪伴 {childProfile?.nickname || '寶寶'} 完成測驗。
-          </p>
+        {/* 標題區 */}
+        <div className="text-center mb-8 animate-in fade-in slide-in-from-top duration-700">
+          <div className="text-6xl mb-4 drop-shadow-lg">🎉</div>
+          <h1 className="text-3xl font-black text-slate-800 mb-2">完成測驗了！</h1>
+          <p className="text-slate-500 text-sm font-medium">感謝您的用心參與</p>
         </div>
 
-        <div className="p-8 space-y-8">
+        {/* 主要卡片 */}
+        <div className="bg-white/90 backdrop-blur-xl rounded-[2.5rem] shadow-2xl shadow-slate-200/50 p-8 space-y-6 border border-white/50 animate-in zoom-in-95 duration-700 delay-300">
+          
+          {/* 焦慮指數 */}
           <div>
-            <label className="block text-sm font-bold text-slate-700 mb-4 flex justify-between items-center">
-              <span>過程中的焦慮程度？</span>
-              <span className={`px-3 py-1 rounded-full text-xs font-black text-white ${
-                anxietyScore > 7 ? 'bg-rose-400' : anxietyScore > 4 ? 'bg-amber-400' : 'bg-emerald-400'
-              }`}>
-                {anxietyScore} 分
-              </span>
+            <label className="block text-sm font-black text-slate-700 mb-3">
+              😰 測驗過程中，您的焦慮程度？
             </label>
-            
-            <div className="relative flex items-center gap-4">
-              <span className="text-2xl grayscale opacity-50">😌</span>
+            <div className="flex items-center gap-4">
+              <span className="text-xs text-slate-400 font-bold whitespace-nowrap">完全不焦慮</span>
               <input 
                 type="range" 
-                min="1" 
+                min="0" 
                 max="10" 
-                step="1"
-                value={anxietyScore} 
+                value={anxietyScore}
                 onChange={(e) => setAnxietyScore(Number(e.target.value))}
-                disabled={isSubmitting} // 提交中禁止修改
-                className="w-full h-4 bg-slate-200 rounded-full appearance-none cursor-pointer accent-sky-500 hover:accent-sky-400 transition-all focus:outline-none focus:ring-4 focus:ring-sky-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 h-3 bg-gradient-to-r from-emerald-200 via-amber-200 to-rose-200 rounded-full appearance-none cursor-pointer accent-sky-500 shadow-inner"
               />
-              <span className="text-2xl">😰</span>
+              <span className="text-xs text-slate-400 font-bold whitespace-nowrap">非常焦慮</span>
             </div>
-            <div className="flex justify-between text-[10px] text-slate-400 font-bold mt-2 uppercase tracking-wide px-10">
-              <span>輕鬆</span>
-              <span>焦慮</span>
+            <div className="text-center mt-3">
+              <span className={`inline-block px-4 py-2 rounded-full text-sm font-black ${
+                anxietyScore <= 3 ? 'bg-emerald-100 text-emerald-700' :
+                anxietyScore <= 6 ? 'bg-amber-100 text-amber-700' :
+                'bg-rose-100 text-rose-700'
+              }`}>
+                {anxietyScore} / 10
+              </span>
             </div>
           </div>
 
+          {/* 備註欄位 */}
           <div>
-            <label className="block text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
-              <span className="text-lg">📝</span> 有什麼想紀錄的細節嗎？
+            <label className="block text-sm font-black text-slate-700 mb-3">
+              📝 有什麼想補充的嗎？（選填）
             </label>
             <textarea 
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              disabled={isSubmitting} // 提交中禁止修改
-              placeholder="例如：寶寶今天比較累、某一題其實好像會一點..."
-              className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl text-slate-700 placeholder-slate-400 focus:border-sky-400 focus:ring-4 focus:ring-sky-50 focus:outline-none transition-all h-32 resize-none leading-relaxed text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              placeholder="例如：孩子今天心情不好、某些題目不太會..."
+              className="w-full p-4 border-2 border-slate-200 rounded-2xl text-sm resize-none focus:outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-100 transition-all placeholder:text-slate-300"
+              rows={4}
             />
           </div>
-        </div>
 
-        <div className="p-6 bg-slate-50/50 border-t border-slate-100">
-          <button 
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-            className={`w-full py-5 rounded-[2rem] text-white shadow-xl shadow-sky-200 active:scale-95 transition-all flex items-center justify-center gap-3 group ${
-              isSubmitting 
-                ? 'bg-slate-400 cursor-not-allowed' 
-                : 'bg-sky-500 hover:bg-sky-600'
-            }`}
-          >
-            {isSubmitting ? (
-              <span className="font-bold text-xl tracking-wider animate-pulse">分析中...</span>
-            ) : (
-              <>
-                <span className="font-black text-xl tracking-wider">查看分析結果</span>
-                <CheckIcon className="w-6 h-6 stroke-[3] group-hover:scale-110 transition-transform" />
-              </>
+          {/* 改善建議區塊（下拉式選單） */}
+          <div className="bg-sky-50 rounded-2xl p-5 border border-sky-100">
+            <h3 className="text-sm font-black text-sky-700 mb-2 flex items-center gap-2">
+              💡 幫助我們改善
+            </h3>
+            <p className="text-xs text-slate-600 mb-3">
+              測驗過程中，有遇到什麼困難嗎？（選填）
+            </p>
+            
+            {/* 下拉式選單 */}
+            <select
+              value={selectedImprovement}
+              onChange={(e) => setSelectedImprovement(e.target.value)}
+              className="w-full p-3 border-2 border-slate-200 rounded-xl text-sm focus:outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-100 transition-all bg-white"
+            >
+              <option value="">-- 請選擇（或跳過） --</option>
+              {IMPROVEMENT_OPTIONS.map(option => (
+                <option key={option.id} value={option.id}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            
+            {/* 只在選擇「其他問題」時顯示文字框 */}
+            {selectedImprovement === 'other' && (
+              <textarea
+                value={otherSuggestion}
+                onChange={(e) => setOtherSuggestion(e.target.value)}
+                placeholder="請描述遇到的問題..."
+                className="w-full p-3 border-2 border-slate-200 rounded-xl text-sm resize-none focus:outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-100 transition-all placeholder:text-slate-300 mt-3"
+                rows={3}
+              />
             )}
-          </button>
+          </div>
+
         </div>
 
+        {/* 下一步按鈕 */}
+        <button 
+          onClick={handleSubmit}
+          className="mt-6 w-full py-5 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-[2rem] font-black text-lg shadow-lg shadow-purple-200 flex items-center justify-center gap-3 active:scale-95 transition-all animate-in slide-in-from-bottom duration-700 delay-500"
+        >
+          <PlayIcon className="w-6 h-6" />
+          查看結果
+        </button>
+
+        {/* 底部提示 */}
+        <p className="text-center text-xs text-slate-400 mt-4 font-medium">
+          您的回饋將幫助我們持續改善服務 🙏
+        </p>
       </div>
     </div>
   );
