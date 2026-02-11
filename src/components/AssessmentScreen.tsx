@@ -2,20 +2,18 @@ import React, { useState, useMemo } from 'react';
 import { useAssessment } from '../context/AssessmentContext';
 import { calculateAge } from '../utils/ageCalculator';
 import { screeningData } from '../constants/screeningData';
-// 引入防呆機制工具
-import { isAgeGroupImplemented, getImplementedAgeGroups } from '../utils/screeningEngine'; 
+// 🔧 修正：加入 calculateAssessmentResult
+import { isAgeGroupImplemented, getImplementedAgeGroups, calculateAssessmentResult } from '../utils/screeningEngine'; 
 import { CheckIcon, XMarkIcon, AlertIcon, AlertCircleIcon, StethoscopeIcon } from './Icons'; 
-// ✅ 修正 1：改用重構後的新型別名稱 StandardAnswerStatus
 import type { StandardAnswerStatus } from '../types';
-// ✅ 從外部匯入 Flashcard 元件 (支援單圖/多圖/輪播模式)
 import { Flashcard } from './Flashcard';
 
 const AssessmentScreen: React.FC = () => {
-  const { childProfile, setAnswer, setScreen } = useAssessment();
+  // 🔧 修正：加入 answers 和 setAssessmentResult
+  const { childProfile, answers, setAnswer, setAssessmentResult, setScreen } = useAssessment();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [showResilience, setShowResilience] = useState(false);
 
-  // 1. 計算年齡與 Key
   const ageKeyInfo = useMemo(() => {
     if (!childProfile) {
       return { 
@@ -32,7 +30,6 @@ const AssessmentScreen: React.FC = () => {
   
   const ageGroupKey = ageKeyInfo.ageGroupKey;
 
-  // 🛡️ 防呆檢查：如果選到了未建置的年齡層，顯示「建置中」
   if (ageGroupKey && !isAgeGroupImplemented(ageGroupKey)) {
     const availableAges = getImplementedAgeGroups().join(', ');
 
@@ -64,13 +61,11 @@ const AssessmentScreen: React.FC = () => {
     );
   }
 
-  // 2. 取得資料物件 (Raw Data)
   const rawData = useMemo(() => {
     if (!ageGroupKey) return null;
     return screeningData[ageGroupKey];
   }, [ageGroupKey]);
 
-  // 3. 展開題目列表
   const questions = useMemo(() => {
     if (!rawData) return [];
     
@@ -82,7 +77,6 @@ const AssessmentScreen: React.FC = () => {
     ];
   }, [rawData]);
 
-  // --- 錯誤處理介面 ---
   if (!childProfile) return <div>資料載入錯誤</div>;
   
   if (questions.length === 0) {
@@ -105,12 +99,9 @@ const AssessmentScreen: React.FC = () => {
      );
   }
 
-  // 取得目前題目
   const currentQuestion = questions[currentQuestionIndex];
-  
   const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
 
-  // ✅ 修正 2：使用重構後的 StandardAnswerStatus
   const handleAnswer = (status: StandardAnswerStatus) => {
     if (status === 'fail') setShowResilience(true);
     else confirmAnswer(status);
@@ -120,7 +111,6 @@ const AssessmentScreen: React.FC = () => {
     confirmAnswer('doctor_assessment');
   };
 
-  // ✅ 修正 3：使用重構後的 StandardAnswerStatus
   const confirmAnswer = (status: StandardAnswerStatus) => {
     setAnswer(currentQuestion.id, status);
     setShowResilience(false);
@@ -128,13 +118,27 @@ const AssessmentScreen: React.FC = () => {
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
     } else {
-      setScreen('feedback'); 
+      // 🔧 修正：完成測驗時計算結果
+      console.log('🎯 [AssessmentScreen] 測驗完成，開始計算結果...');
+      console.log('📊 [AssessmentScreen] ageGroupKey:', ageGroupKey);
+      console.log('📊 [AssessmentScreen] answers:', answers);
+      
+      if (ageGroupKey) {
+        try {
+          const result = calculateAssessmentResult(ageGroupKey, answers);
+          console.log('✅ [AssessmentScreen] 計算結果:', result);
+          setAssessmentResult(result);
+        } catch (error) {
+          console.error('❌ [AssessmentScreen] 計算結果失敗:', error);
+        }
+      }
+      
+      setScreen('feedback');
     }
   };
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col max-w-md mx-auto relative overflow-hidden">
-      {/* 頂部進度條 */}
       <div className="bg-white px-4 py-4 flex items-center gap-4 border-b border-slate-100 sticky top-0 z-30">
         <div className="flex-1 h-3 bg-slate-100 rounded-full overflow-hidden shadow-inner border border-slate-200/50">
           <div 
@@ -150,7 +154,6 @@ const AssessmentScreen: React.FC = () => {
           
           <div className="w-full mb-6 min-h-[240px] flex items-center justify-center bg-slate-50 rounded-3xl p-1 border border-slate-100/50 relative overflow-hidden">
             
-            {/* 情況 1: 多圖卡題 (18-24m 專用) */}
             {currentQuestion.kind === 'multi_image' && (
               <Flashcard 
                 mode="multi" 
@@ -158,7 +161,6 @@ const AssessmentScreen: React.FC = () => {
               />
             )}
 
-            {/* ✅ 新增：輪播模式（圖卡 5-8，4-5y 和 5-7y 量表） */}
             {currentQuestion.kind === 'carousel' && (
               <Flashcard 
                 mode="carousel" 
@@ -166,7 +168,6 @@ const AssessmentScreen: React.FC = () => {
               />
             )}
 
-            {/* ✅ 修正 4：支援 3-4 歲量表七的單圖顯示 (kind: 'image') */}
             {(currentQuestion.kind === 'image' || currentQuestion.kind === 'single_image') && (
               <Flashcard 
                 mode="single" 
@@ -174,14 +175,12 @@ const AssessmentScreen: React.FC = () => {
               />
             )}
 
-            {/* 情況 2: Emoji 題 (標準題型) */}
             {currentQuestion.kind === 'emoji' && (
               <div className="text-8xl drop-shadow-sm select-none animate-in zoom-in duration-500">
                 {currentQuestion.emoji}
               </div>
             )}
             
-             {/* Fallback */}
              {!currentQuestion.kind && (
                <div className="text-8xl drop-shadow-sm select-none opacity-50">
                  🧸
@@ -197,7 +196,6 @@ const AssessmentScreen: React.FC = () => {
             {currentQuestion.text}
           </h2>
 
-          {/* 安全警示區塊 */}
           {currentQuestion.warning && (
             <div className="w-full bg-rose-50 border-l-4 border-rose-500 p-4 rounded-r-xl mb-4 animate-in slide-in-from-bottom-2 fade-in duration-300">
               <div className="flex items-start gap-3">
@@ -212,7 +210,6 @@ const AssessmentScreen: React.FC = () => {
             </div>
           )}
 
-          {/* 施測指引 */}
           {currentQuestion.description && (
             <div className="w-full bg-amber-50/50 border border-amber-100/50 p-4 rounded-2xl mt-2">
               <p className="text-[11px] font-bold text-amber-500 mb-1 flex items-center gap-1 uppercase tracking-tighter">
@@ -226,10 +223,8 @@ const AssessmentScreen: React.FC = () => {
         </div>
       </div>
 
-      {/* 底部按鈕區 */}
       <div className={`bg-white/95 backdrop-blur-xl border-t border-slate-200 p-6 pb-12 fixed bottom-0 w-full max-w-md flex flex-col gap-4 z-40 shadow-[0_-15px_35px_-15px_rgba(0,0,0,0.1)]`}>
         
-        {/* 醫師評估按鈕 */}
         {currentQuestion.allowDoctorAssessment && (
           <button
             onClick={handleDoctorAssessment}
@@ -240,7 +235,6 @@ const AssessmentScreen: React.FC = () => {
           </button>
         )}
 
-        {/* 作答按鈕 */}
         <div className="grid grid-cols-2 gap-5 w-full">
           <button 
             onClick={() => handleAnswer('fail')} 
@@ -260,7 +254,6 @@ const AssessmentScreen: React.FC = () => {
         </div>
       </div>
 
-      {/* 韌性檢核彈窗 */}
       {showResilience && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-end justify-center z-50 p-4 pb-12 animate-in fade-in duration-200">
           <div className={`bg-white rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl animate-in slide-in-from-bottom duration-300`}>

@@ -3,7 +3,13 @@
 /**
  * 1. 頁面狀態
  */
-export type Screen = 'welcome' | 'confirmation' | 'tool_prep' | 'assessment' | 'feedback' | 'results';
+export type Screen = 
+  | 'welcome' 
+  | 'profile'           // ✅ 統一命名
+  | 'tool-preparation'  // ✅ 統一命名
+  | 'assessment' 
+  | 'feedback' 
+  | 'results';
 
 /**
  * 2. 兒童基本資料
@@ -90,9 +96,12 @@ export type Answers = Record<string, RawAnswerValue>;
 
 export type AssessmentStatus = 'max' | 'pass' | 'fail';
 
+// ✅ 修正：加入改善建議欄位
 export interface Feedback {
   anxietyScore: number;
   notes: string;
+  improvement?: string;      // 改善建議 ID
+  otherSuggestion?: string;  // 其他問題說明
 }
 
 export interface AssessmentResult {

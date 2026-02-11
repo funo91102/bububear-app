@@ -4,7 +4,7 @@ import { calculateAge } from '../utils/ageCalculator';
 import { screeningData } from '../constants/screeningData';
 import { getDomainMaxScore } from '../utils/screeningEngine';
 import { CheckIcon, AlertCircleIcon, RefreshIcon, HeartIcon, DownloadIcon, StethoscopeIcon } from './Icons';
-import ResultWarning from './ResultWarning'; // 新增：引入警示元件
+import ResultWarning from './ResultWarning';
 import type { DomainKey, AgeGroupKey } from '../types';
 import html2canvas from 'html2canvas';
 
@@ -17,7 +17,6 @@ const DOMAIN_NAMES: Record<DomainKey, string> = {
 };
 
 const ResultsScreen: React.FC = () => {
-  // 修正：若 feedback 未使用，建議從解構中移除以避開 TS6133，這裡保留它是因為下方的匯出報告有用到
   const { assessmentResult, childProfile, feedback, setScreen, resetAssessment, answers } = useAssessment();
   const reportRef = useRef<HTMLDivElement>(null); 
   const [isExporting, setIsExporting] = useState(false);
@@ -61,7 +60,7 @@ const ResultsScreen: React.FC = () => {
     const currentAgeKey = ageData.key as AgeGroupKey;
 
     return (Object.keys(DOMAIN_NAMES) as DomainKey[]).map(key => {
-      const domainData = screeningData[currentAgeKey]?.[key]; // 加入 optional chaining 保護
+      const domainData = screeningData[currentAgeKey]?.[key];
       if (!domainData) return null;
       
       const maxScore = getDomainMaxScore(currentAgeKey, key);
@@ -72,7 +71,6 @@ const ResultsScreen: React.FC = () => {
       const hasDoctorAssessment = questions.some(q => answers[q.id] === 'doctor_assessment');
       
       const status = domainStatuses[key];
-      // 這裡的 isPass 用於 UI 卡片的基本顏色分類 (Pass/Max 為綠色系，Fail 為紅色系)
       const isPass = status === 'pass' || status === 'max';
 
       return {
@@ -83,11 +81,10 @@ const ResultsScreen: React.FC = () => {
         cutoff: domainData.cutoff,
         hasDoctorAssessment,
         isPass,
-        status // 'max' | 'pass' | 'fail'
+        status
       };
     }).filter((item): item is NonNullable<typeof item> => item !== null);
   }, [ageData.key, answers, domainStatuses, domainScores]);
-
 
   // 2. 匯出圖片功能
   const handleExportImage = async () => {
@@ -117,7 +114,7 @@ const ResultsScreen: React.FC = () => {
     }
   };
 
-  // 3. 定義支持性訊息邏輯 (新增 'great' 狀態)
+  // 3. 定義支持性訊息邏輯
   const supportTheme = useMemo(() => {
     switch (overallStatus) {
       case 'referral': 
@@ -132,7 +129,7 @@ const ResultsScreen: React.FC = () => {
           actionTitle: '堅定建議',
           actionDesc: '篩檢並非診斷，但這是一個寶貴的提醒。建議您盡快預約小兒科醫師，進行更精確的發展評估，早期的專業協助是送給寶寶最好的成長禮物。'
         };
-      case 'follow_up': // 🔧 修正：這才是「需追蹤」
+      case 'follow_up':
         return {
           bg: 'bg-amber-50', 
           bgStrong: 'bg-amber-100',
@@ -144,7 +141,7 @@ const ResultsScreen: React.FC = () => {
           actionTitle: '支持指引',
           actionDesc: '建議您可以增加親子互動時間，多給予寶寶嘗試的機會。若您感到不放心，下次健兒門診時可諮詢醫師。'
         };
-      case 'great': // ✅ 全滿分
+      case 'great':
         return {
           bg: 'bg-emerald-50', 
           bgStrong: 'bg-emerald-100',
@@ -156,7 +153,7 @@ const ResultsScreen: React.FC = () => {
           actionTitle: '持續保持',
           actionDesc: '請繼續維持優質的親子互動與共讀習慣，並記得定期帶寶寶進行預防注射喔！'
         };
-      default: // 🔧 修正：這是 'normal'（全部及格但非滿分）
+      default:
         return {
           bg: 'bg-emerald-50', 
           bgStrong: 'bg-emerald-100', 
@@ -172,7 +169,6 @@ const ResultsScreen: React.FC = () => {
     }
   }, [overallStatus]);
 
-  // 若需要顯示焦慮安撫
   const showAnxietyComfort = feedback && feedback.anxietyScore >= 7;
 
   const handleRestart = () => {
@@ -186,7 +182,6 @@ const ResultsScreen: React.FC = () => {
 
       <div className="relative z-10 max-w-md mx-auto px-6 pt-8">
         
-        {/* 焦慮安撫 */}
         {showAnxietyComfort && (
           <div className="mb-6 bg-white/80 backdrop-blur-sm border border-slate-200 rounded-2xl p-4 flex items-start gap-3 shadow-sm animate-in fade-in slide-in-from-top-4">
             <HeartIcon className="w-5 h-5 text-rose-400 shrink-0 mt-0.5 fill-rose-100" />
@@ -227,18 +222,15 @@ const ResultsScreen: React.FC = () => {
           </div>
         </div>
 
-        {/* 新增：警示說明區塊（在評估詳情之前） */}
         <div className="mt-8">
           <ResultWarning />
         </div>
 
-        {/* 評估詳情 (App畫面) */}
+        {/* 評估詳情 */}
         <div className="mt-6 space-y-4">
           <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest ml-2 flex items-center gap-2"><span>📊</span> 各面向評估詳情</h3>
           <div className="grid grid-cols-1 gap-3">
             {resolvedDomains.map((item, index) => {
-              // 樣式邏輯：Fail 為紅，Pass 為綠，Max 為金(可選)或綠
-              // 這裡簡單化：Fail 為紅，其他為預設白底
               let cardStyle = item.isPass ? 'bg-white border-slate-100 shadow-sm' : 'bg-rose-50/50 border-rose-100 shadow-inner';
               if (item.hasDoctorAssessment) cardStyle = 'bg-indigo-50/50 border-indigo-100 shadow-sm';
 
@@ -291,7 +283,6 @@ const ResultsScreen: React.FC = () => {
             {isExporting ? <span className="animate-pulse">製作報告中...</span> : <><DownloadIcon className="w-5 h-5" /><span>儲存評估結果 (給醫師看)</span></>}
           </button>
           
-         {/* ✅ 底部提醒（簡短版） */}
         <div className="text-center py-2 px-4">
            <p className="text-slate-400 text-[10px] font-medium">
               本工具依據衛福部兒童發展連續篩檢量表設計
@@ -304,7 +295,7 @@ const ResultsScreen: React.FC = () => {
         </div>
       </div>
 
-      {/* 匯出報告隱藏區 (維持完整版以便醫師查看) */}
+      {/* 匯出報告隱藏區 */}
       <div ref={reportRef} className="fixed top-0 left-[-9999px] w-[600px] bg-white p-8 rounded-none text-slate-800" style={{ fontFamily: 'sans-serif' }}>
         <div className="border-b-2 border-slate-800 pb-4 mb-6 flex justify-between items-end">
           <div><h1 className="text-3xl font-black text-slate-900 mb-1">步步熊｜兒童發展篩檢報告</h1><p className="text-sm text-slate-500">檢測日期：{new Date().toLocaleDateString()}</p></div>

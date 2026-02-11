@@ -1,23 +1,21 @@
 // @ts-ignore
-import React, { useState, useEffect, type FC } from 'react'; // ✅ 用 ts-ignore 避開 Vercel 的 TS6133 檢查
+import React, { useState, useEffect, type FC } from 'react';
 import { AssessmentProvider, useAssessment } from './context/AssessmentContext';
 import AssessmentScreen from './components/AssessmentScreen';
 import ResultsScreen from './components/ResultsScreen';
 import ToolPreparationScreen from './components/ToolPreparationScreen';
 import FeedbackScreen from './components/FeedbackScreen';
-import DisclaimerModal from './components/DisclaimerModal'; // 新增：免責聲明彈窗
+import DisclaimerModal from './components/DisclaimerModal';
 import { calculateAge } from './utils/ageCalculator';
 import { PlayIcon, ChevronLeftIcon, AlertCircleIcon } from './components/Icons';
 import type { AgeGroupKey } from './types'; 
 import './index.css';
 
-// 定義支援的年齡層量表
 const supportedAgeGroups: AgeGroupKey[] = [
   '6-9m', '9-12m', '12-15m', '15-18m', '18-24m', 
   '2-3y', '3-4y', '4-5y', '5-7y'
 ];
 
-// --- 輔助函式：驗證邏輯 ---
 const validateProfileData = (
   nickname: string, 
   birthDate: string, 
@@ -36,8 +34,8 @@ const validateProfileData = (
   return null;
 };
 
-// --- 內部元件 1: 確認資訊頁面 ---
-const ConfirmationScreen: FC = () => {
+// ✅ 修正：ConfirmationScreen 對應 'profile'
+const ProfileScreen: FC = () => {
   const { childProfile, setScreen } = useAssessment();
   
   useEffect(() => {
@@ -105,7 +103,7 @@ const ConfirmationScreen: FC = () => {
               <ChevronLeftIcon className="w-4 h-4" />返回
             </button>
             <button 
-              onClick={() => setScreen('tool_prep')} 
+              onClick={() => setScreen('tool-preparation')}  // ✅ 修正：改為 'tool-preparation'
               disabled={!isSupported}
               className="flex-[2] py-4 rounded-xl font-bold text-white bg-emerald-500 hover:bg-emerald-600 disabled:bg-slate-300 disabled:cursor-not-allowed shadow-lg transition-all flex items-center justify-center gap-2 active:scale-95"
             >
@@ -117,7 +115,6 @@ const ConfirmationScreen: FC = () => {
   );
 };
 
-// --- 內部元件 2: 歡迎畫面（新增免責聲明邏輯） ---
 const WelcomeScreen: FC = () => {
   const { setScreen, setChildProfile } = useAssessment();
   const [nickname, setNickname] = useState('');
@@ -126,11 +123,9 @@ const WelcomeScreen: FC = () => {
   const [gestationalWeeks, setGestationalWeeks] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   
-  // 新增：免責聲明狀態管理
   const [showDisclaimer, setShowDisclaimer] = useState(false);
   const [hasAcceptedDisclaimer, setHasAcceptedDisclaimer] = useState(false);
 
-  // 新增：檢查是否已經同意過免責聲明
   useEffect(() => {
     const accepted = localStorage.getItem('bububear_disclaimer_accepted');
     if (accepted === 'true') {
@@ -145,38 +140,32 @@ const WelcomeScreen: FC = () => {
       return;
     }
     
-    // 新增：如果還沒同意免責聲明，先顯示彈窗
     if (!hasAcceptedDisclaimer) {
       setShowDisclaimer(true);
       return;
     }
     
-    // 原有邏輯：繼續到下一步
     proceedToConfirmation();
   };
 
-  // 新增：同意免責聲明後的處理
   const handleAcceptDisclaimer = () => {
     localStorage.setItem('bububear_disclaimer_accepted', 'true');
     setHasAcceptedDisclaimer(true);
     setShowDisclaimer(false);
-    // 繼續到下一步
     proceedToConfirmation();
   };
 
-  // 新增：提取原有的下一步邏輯
   const proceedToConfirmation = () => {
     setErrorMsg(null);
     let finalGestationalAge = isPremature ? parseInt(gestationalWeeks) : 40;
     if (finalGestationalAge >= 37) finalGestationalAge = 40;
     
     setChildProfile({ nickname, birthDate, gestationalAge: finalGestationalAge });
-    setScreen('confirmation');
+    setScreen('profile');  // ✅ 修正：改為 'profile'
   };
 
   return (
     <div className="min-h-screen bg-sky-50 flex flex-col items-center justify-center p-6 relative">
-      {/* 新增：免責聲明彈窗 */}
       {showDisclaimer && <DisclaimerModal onAccept={handleAcceptDisclaimer} />}
 
       <div className="bg-white/90 backdrop-blur-sm p-8 rounded-3xl shadow-xl w-full max-w-sm border border-white/50 z-10">
@@ -246,7 +235,6 @@ const WelcomeScreen: FC = () => {
         </div>
       </div>
 
-      {/* 底部資訊區：補回衛福部說明並統一風格 */}
       <div className="mt-8 pb-10 text-center space-y-2">
         <p className="text-[12px] text-slate-400 font-medium">傅炯皓醫師 製作</p>
         <p className="text-[11px] text-slate-400">本工具依據衛福部兒童發展連續篩檢量表設計</p>
@@ -258,17 +246,44 @@ const WelcomeScreen: FC = () => {
   );
 };
 
-// --- 主元件 ---
+// ✅ 修正：Main 元件的 switch case
 const Main: FC = () => {
   const { screen } = useAssessment();
-  switch (screen) {
-    case 'welcome': return <WelcomeScreen />;
-    case 'confirmation': return <ConfirmationScreen />;
-    case 'tool_prep': return <ToolPreparationScreen />;
-    case 'assessment': return <AssessmentScreen />;
-    case 'feedback': return <FeedbackScreen />; 
-    case 'results': return <ResultsScreen />;
-    default: return <WelcomeScreen />;
+  
+  // 🔧 Debug: 監控 screen 變化
+  React.useEffect(() => {
+    console.log(`🎬 [App] Main 元件偵測到 screen 變更: ${screen}`);
+  }, [screen]);
+  
+  console.log(`🎯 [App] Main 元件渲染，當前 screen: ${screen}`);
+  
+  try {
+    switch (screen) {
+      case 'welcome': 
+        console.log('📍 [App] 渲染 WelcomeScreen');
+        return <WelcomeScreen />;
+      case 'profile': 
+        console.log('📍 [App] 渲染 ProfileScreen');
+        return <ProfileScreen />;
+      case 'tool-preparation': 
+        console.log('📍 [App] 渲染 ToolPreparationScreen');
+        return <ToolPreparationScreen />;
+      case 'assessment': 
+        console.log('📍 [App] 渲染 AssessmentScreen');
+        return <AssessmentScreen />;
+      case 'feedback': 
+        console.log('📍 [App] 渲染 FeedbackScreen');
+        return <FeedbackScreen />;
+      case 'results': 
+        console.log('📍 [App] 渲染 ResultsScreen');
+        return <ResultsScreen />;
+      default: 
+        console.log('📍 [App] 未知 screen，渲染 WelcomeScreen');
+        return <WelcomeScreen />;
+    }
+  } catch (error) {
+    console.error('❌ [App] Main 元件渲染失敗:', error);
+    return <div>渲染錯誤：{String(error)}</div>;
   }
 };
 
