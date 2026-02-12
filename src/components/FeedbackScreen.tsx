@@ -61,13 +61,19 @@ const FeedbackScreen: React.FC = () => {
         else ageGroup = '5-7y';
       }
 
+      // 🔄 修正邏輯：找出改善建議的中文 Label，而非僅傳送 ID
+      const selectedOption = IMPROVEMENT_OPTIONS.find(opt => opt.id === feedbackData.improvement);
+      const improvementLabel = selectedOption ? selectedOption.label : feedbackData.improvement;
+
       // 準備傳送的數據（完全匿名）
       const payload = {
         timestamp: new Date().toISOString(),
         ageGroup: ageGroup,
         anxietyScore: feedbackData.anxietyScore,
-        hasNotes: !!feedbackData.notes,
-        improvement: feedbackData.improvement,
+        // 🔄 修正邏輯：移除 !!，直接傳送使用者輸入的文字內容
+        notes: feedbackData.notes,
+        // 🔄 修正邏輯：傳送中文標籤
+        improvement: improvementLabel,
         otherSuggestion: feedbackData.otherSuggestion
       };
 
