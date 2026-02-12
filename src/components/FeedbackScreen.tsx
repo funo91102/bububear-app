@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAssessment } from '../context/AssessmentContext';
 import { PlayIcon } from './Icons';
 
-// 改善建議選項
+// 改善建議選項（合併重複項目，移除 emoji）
 const IMPROVEMENT_OPTIONS = [
   { id: 'image_small', label: '圖片/圖卡太小，看不清楚' },
   { id: 'text_unclear', label: '文字說明不夠清楚' },
@@ -14,8 +14,19 @@ const IMPROVEMENT_OPTIONS = [
 const FeedbackScreen: React.FC = () => {
   const { setScreen, setFeedback, childProfile } = useAssessment();
   
+  // 🔧 Debug: 檢查 context 是否正常
+  console.log('🔍 FeedbackScreen 載入，Context 狀態:', {
+    hasSetScreen: !!setScreen,
+    hasSetFeedback: !!setFeedback,
+    hasChildProfile: !!childProfile,
+    setScreenType: typeof setScreen,
+    setFeedbackType: typeof setFeedback
+  });
+  
   const [anxietyScore, setAnxietyScore] = useState(5);
   const [notes, setNotes] = useState('');
+  
+  // 改善建議狀態（改為單選）
   const [selectedImprovement, setSelectedImprovement] = useState('');
   const [otherSuggestion, setOtherSuggestion] = useState('');
 
@@ -23,9 +34,10 @@ const FeedbackScreen: React.FC = () => {
   const sendFeedbackToN8n = async (feedbackData: any) => {
     try {
       // 檢查是否有設定 n8n webhook URL
-      const webhookUrl = (import.meta as any).env?.VITE_N8N_FEEDBACK_WEBHOOK;
+      const webhookUrl = (import.meta as ImportMeta & { env: Record<string, string> }).env.VITE_N8N_FEEDBACK_WEBHOOK;
       
       if (!webhookUrl) {
+        console.log('📊 未設定 n8n webhook，跳過傳送');
         return;
       }
 
@@ -37,6 +49,7 @@ const FeedbackScreen: React.FC = () => {
         const months = (today.getFullYear() - birthDate.getFullYear()) * 12 + 
                        (today.getMonth() - birthDate.getMonth());
         
+        // 判斷年齡層
         if (months < 9) ageGroup = '6-9m';
         else if (months < 12) ageGroup = '9-12m';
         else if (months < 15) ageGroup = '12-15m';
@@ -63,13 +76,17 @@ const FeedbackScreen: React.FC = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
+      
+      console.log('✅ 回饋已成功傳送到 n8n');
     } catch (error) {
-      // 靜默處理錯誤，不影響使用者體驗
-      console.error('回饋傳送失敗:', error);
+      // 捕捉所有錯誤，不中斷流程
+      console.log('⚠️ 回饋傳送失敗（不影響使用）:', error);
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    console.log('🎯 開始提交回饋...');
+    
     const feedbackData = {
       anxietyScore,
       notes,
@@ -77,16 +94,32 @@ const FeedbackScreen: React.FC = () => {
       otherSuggestion
     };
     
+    console.log('📝 回饋資料:', feedbackData);
+    
     // 設定回饋資料
     setFeedback(feedbackData);
+    console.log('✅ 回饋資料已設定');
 
-    // 傳送到 n8n（背景執行，不阻擋）
-    sendFeedbackToN8n(feedbackData).catch(() => {
-      // 靜默處理錯誤
+    // 傳送到 n8n（不等待，不阻擋）
+    sendFeedbackToN8n(feedbackData).catch(err => {
+      console.log('⚠️ 背景傳送失敗（不影響）:', err);
     });
     
-    // 進入結果頁面
-    setScreen('results');
+    // 立即進入結果頁面
+    console.log('🚀 準備進入結果頁面...');
+    console.log('🔍 setScreen 函數:', setScreen);
+    
+    // 🔧 StackBlitz 修復：使用 setTimeout 確保狀態更新
+    setTimeout(() => {
+      setScreen('results');
+      console.log('✅ setScreen("results") 已執行');
+    }, 0);
+    
+    // 檢查
+    setTimeout(() => {
+      console.log('⏰ 1秒後檢查：頁面是否已切換？');
+      console.log('📍 如果您還在回饋頁面，表示需要完全重新整理瀏覽器');
+    }, 1000);
   };
 
   return (
