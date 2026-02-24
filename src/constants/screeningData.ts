@@ -819,7 +819,7 @@ export const screeningData: ScreeningData = {
         {
           id: 'FM-4-5y-Q3', type: '實', weight: 2,
           text: '★ (圖卡4) 可以看著圖形照著畫出一樣的形狀 (十字/正方形)？',
-          description: '4 歲：至少可以畫出十字。4.5 歲：至少可以畫出方形。',
+          description: '4 歲：至少可以畫出十字。4.5 歲：至少可以畫出方形。（不示範）',
           emoji: '🟩', kind: 'image',
           imageSrc: '/assets/card4_shapes.png'
         }
@@ -932,7 +932,7 @@ export const screeningData: ScreeningData = {
         {
           id: 'FM-5-7y-Q1', type: '實', weight: 2,
           text: '★ (圖卡4) 可以看著指定圖形照著畫出？',
-          description: '5歲：畫出三角形。6歲：畫出菱形。邊角需清楚明顯。',
+          description: '5歲：畫出三角形。6歲：畫出菱形。邊角需清楚明顯。（不示範）',
           emoji: '✏️', kind: 'image',
           imageSrc: '/assets/card4_shapes.png'
         },
