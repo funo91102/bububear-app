@@ -1011,8 +1011,8 @@ export const screeningData: ScreeningData = {
         },
         {
           id: 'S-5-7y-Q2', type: '問', weight: 1,
-          text: '可以輪流玩遊戲或有耐心排隊？',
-          description: '可以輪流、排隊，且不隨意中斷別人說話。',
+          text: '(反向題) 常沒有耐心等待？',
+          description: '請勾選「是」欄位若孩子「有耐心」等待。(此為反向題：若孩子常沒耐心選否，有耐心選是)',
           emoji: '⏳', kind: 'emoji'
         },
         {
