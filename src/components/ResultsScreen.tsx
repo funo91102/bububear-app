@@ -285,7 +285,7 @@ const ResultsScreen: React.FC = () => {
           
         <div className="text-center py-2 px-4">
            <p className="text-slate-400 text-[10px] font-medium">
-              本工具依據衛福部兒童發展連續篩檢量表設計
+              本工具參考兒童發展常模與臨床經驗設計
           </p>
         </div>
 

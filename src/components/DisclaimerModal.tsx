@@ -55,8 +55,8 @@ const DisclaimerModal: React.FC<DisclaimerModalProps> = ({ onAccept }) => {
               一、本系統性質
             </h3>
             <p className="text-slate-600">
-              本系統是基於<strong className="text-slate-800">衛生福利部國民健康署「兒童發展篩檢量表」</strong>所開發的
-              <strong className="text-emerald-600">預習與參考工具</strong>，目的是協助家長在就醫前了解篩檢內容，
+              本系統是<strong className="text-emerald-600">兒童發展里程碑參考工具</strong>，
+              參考兒童發展常模與臨床經驗設計，目的是協助家長在就醫前了解發展篩檢內容，
               減輕孩童對陌生環境的焦慮。
             </p>
           </div>
@@ -70,11 +70,11 @@ const DisclaimerModal: React.FC<DisclaimerModalProps> = ({ onAccept }) => {
             <ul className="space-y-2 text-slate-700">
               <li className="flex items-start gap-2">
                 <span className="text-rose-500 mt-0.5">•</span>
-                <span>本系統<strong className="text-rose-700">非醫療診斷工具</strong>，篩檢結果僅供參考</span>
+                <span>本系統<strong className="text-rose-700">非醫療診斷工具</strong>，不具診斷效力</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-rose-500 mt-0.5">•</span>
-                <span>任何發展疑慮請務必<strong className="text-rose-700">諮詢專業醫師</strong></span>
+                <span>結果僅供參考，任何發展疑慮請務必<strong className="text-rose-700">諮詢專業醫師</strong></span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-rose-500 mt-0.5">•</span>
@@ -87,26 +87,17 @@ const DisclaimerModal: React.FC<DisclaimerModalProps> = ({ onAccept }) => {
             </ul>
           </div>
 
-          {/* 三、授權與資料來源 */}
+          {/* 三、資料來源說明 */}
           <div className="bg-sky-50 p-4 rounded-xl border border-sky-200">
             <h3 className="font-bold text-sky-800 mb-2 flex items-center gap-2">
               <span className="text-base">📚</span>
-              三、授權與資料來源
+              三、資料來源說明
             </h3>
-            <ul className="space-y-1.5 text-slate-600">
-              <li className="flex items-start gap-2">
-                <span className="text-sky-500">•</span>
-                <span><strong>量表內容來源：</strong>衛生福利部國民健康署</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-sky-500">•</span>
-                <span><strong>授權狀態：</strong>申請中</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-sky-500">•</span>
-                <span><strong>圖卡來源：</strong>衛福部標準化圖卡</span>
-              </li>
-            </ul>
+            <p className="text-slate-600">
+              本工具參考兒童發展常模與醫療實務經驗設計，
+              內容涵蓋<strong className="text-sky-700">粗大動作、精細動作、語言認知、社會發展</strong>四大面向，
+              協助家長了解各年齡層的發展里程碑。
+            </p>
           </div>
 
           {/* 四、隱私保護 */}
@@ -144,7 +135,7 @@ const DisclaimerModal: React.FC<DisclaimerModalProps> = ({ onAccept }) => {
               <ul className="space-y-1.5 ml-4">
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-500 font-bold">✓</span>
-                  <span>讓家長在就醫前了解篩檢內容</span>
+                  <span>讓家長在就醫前了解發展篩檢內容</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-500 font-bold">✓</span>
@@ -157,7 +148,7 @@ const DisclaimerModal: React.FC<DisclaimerModalProps> = ({ onAccept }) => {
               </ul>
               <p className="mt-3 pt-3 border-t border-slate-200 font-medium text-slate-800">
                 但請記得：<strong className="text-rose-600">每個孩子的發展節奏都不同</strong>，
-                篩檢只是「初步觀察」不是「最終判斷」。專業評估需要考慮更多因素。
+                這個工具只是「初步參考」不是「最終判斷」。專業評估需要考慮更多因素。
               </p>
               <p className="text-slate-600 italic mt-2">
                 有任何疑問，請帶孩子來門診，讓我們一起關心寶貝的成長！
@@ -199,7 +190,7 @@ const DisclaimerModal: React.FC<DisclaimerModalProps> = ({ onAccept }) => {
             <span className={`text-sm font-medium leading-snug ${
               hasScrolledToBottom ? 'text-slate-700' : 'text-slate-400'
             }`}>
-              我已仔細閱讀並了解以上聲明，同意本系統<strong className="text-slate-900">僅作為輔助工具</strong>使用，
+              我已仔細閱讀並了解以上聲明，同意本系統<strong className="text-slate-900">僅作為參考工具</strong>使用，
               不作為醫療診斷依據，有疑慮時將尋求專業醫療協助。
             </span>
           </label>

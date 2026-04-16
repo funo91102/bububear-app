@@ -17,7 +17,7 @@ const ResultWarning: React.FC = () => {
               ⚠️ 重要提醒
             </h3>
             <p className="text-xs text-slate-700 leading-relaxed font-medium">
-              本結果<strong className="text-rose-700">僅供參考，不代表醫療診斷</strong>。
+              本結果<strong className="text-rose-700">僅供參考，不具診斷效力</strong>。
               每個孩子的發展速度不同，建議與您的兒科醫師進行專業評估。
             </p>
           </div>
@@ -92,9 +92,9 @@ const ResultWarning: React.FC = () => {
           <div className="pt-3 border-t border-slate-200">
             <p className="text-[10px] text-slate-500 text-center leading-relaxed">
               <strong className="text-slate-700">再次提醒：</strong>
-              本系統依據衛福部兒童發展連續篩檢量表設計，
+              本工具參考兒童發展常模與臨床經驗設計，
               <br />
-              但測試結果僅供參考，請務必與專業醫師進行正式評估。
+              結果僅供參考，請務必與專業醫師進行正式評估。
             </p>
           </div>
         </div>

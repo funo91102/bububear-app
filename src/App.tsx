@@ -237,9 +237,9 @@ const WelcomeScreen: FC = () => {
 
       <div className="mt-8 pb-10 text-center space-y-2">
         <p className="text-[12px] text-slate-400 font-medium">傅炯皓醫師 製作</p>
-        <p className="text-[11px] text-slate-400">本工具依據衛福部兒童發展連續篩檢量表設計</p>
+        <p className="text-[11px] text-slate-400">本工具參考兒童發展常模與臨床經驗設計</p>
         <p className="text-[11px] text-rose-500 font-bold px-4 tracking-tight">
-          測試結果僅供參考，請與您的兒科醫師進行正式評估！
+          本工具不具診斷效力，結果僅供參考，請與您的兒科醫師進行正式評估！
         </p>
       </div>
     </div>
